@@ -1,0 +1,18 @@
+{
+  "all": true,
+  "include": ["app/**/*.ts"],
+  "exclude": [
+    "build/**",
+    "bin/**",
+    "config/**",
+    "database/migrations/**",
+    "database/factories/**",
+    "database/schema.ts",
+    ".adonisjs/**",
+    "tests/**",
+    "**/*.d.ts"
+  ],
+  "reporter": ["text", "html"],
+  "report-dir": "coverage",
+  "clean": true
+}

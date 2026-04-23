@@ -4,6 +4,10 @@ build
 tmp/*
 !tmp/.gitkeep
 
+# Test coverage
+coverage
+.nyc_output
+
 # Secrets
 .env
 .env.local
