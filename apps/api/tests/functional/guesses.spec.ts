@@ -113,13 +113,38 @@ test.group('Guesses', (group) => {
     res.assertStatus(204)
   })
 
-  test('GET /rounds/:roundId/guesses lista palpites', async ({ client, assert }) => {
+  test('GET /rounds/:roundId/guesses retorna match + guesses formatados', async ({ client, assert }) => {
     const { round, match, user } = await seedRoundMatchUser()
-    await GuessFactory.merge({ userId: user.id, matchId: match.id }).create()
+    await GuessFactory.merge({
+      userId: user.id,
+      matchId: match.id,
+      homeScore: 2,
+      awayScore: 1,
+    }).create()
 
     const res = await client.get(`/api/v1/rounds/${round.id}/guesses`).headers(HEADERS)
     res.assertStatus(200)
-    assert.lengthOf(res.body(), 1)
+
+    const body = res.body()
+    assert.equal(body.match.id, match.id)
+    assert.equal(body.match.homeTeam, match.homeTeam)
+    assert.equal(body.match.awayTeam, match.awayTeam)
+    assert.lengthOf(body.guesses, 1)
+    assert.equal(body.guesses[0].homeScore, 2)
+    assert.equal(body.guesses[0].awayScore, 1)
+    assert.equal(body.guesses[0].user.id, user.id)
+    assert.equal(body.guesses[0].user.name, user.name)
+    assert.notExists(body.guesses[0].user.whatsappNumber)
+    assert.notExists(body.guesses[0].isDeleted)
+    assert.notExists(body.guesses[0].createdAt)
+  })
+
+  test('GET /rounds/:roundId/guesses retorna match:null + guesses:[] quando rodada não tem jogo', async ({ client, assert }) => {
+    const round = await RoundFactory.with('season').create()
+    const res = await client.get(`/api/v1/rounds/${round.id}/guesses`).headers(HEADERS)
+    res.assertStatus(200)
+    assert.isNull(res.body().match)
+    assert.lengthOf(res.body().guesses, 0)
   })
 
   test('POST /guesses exige bearer token', async ({ client }) => {

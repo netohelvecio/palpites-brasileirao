@@ -11,7 +11,8 @@ app/
   controllers/     # HTTP controllers finos: validam input, delegam ao repository/service
   models/          # Lucid models (extendem UserSchema/MatchSchema/... de database/schema.ts)
   repositories/    # Acesso a dados via DI — encapsulam queries Lucid, evitam duplicação
-  services/        # Regras de domínio puras e orquestração (score parser, scoring, ranking)
+  presenters/      # Funções puras que formatam models em response shapes HTTP (one per view)
+  services/        # Regras de domínio puras e orquestração (score parser, scoring, ranking, betting policy)
   validators/      # VineJS validators (createUserValidator, etc.)
   middleware/      # admin_auth_middleware (Bearer admin), container_bindings_middleware, force_json_response_middleware
   integrations/    # [futuro] api_football/, whatsapp/ (Baileys)
@@ -38,10 +39,11 @@ tests/
 ## Convenções locais
 
 - **ESM obrigatório**: arquivos em TS, imports com `.js` nos caminhos relativos (`import Foo from './foo.js'`).
-- **Subpath aliases**: `#controllers/*`, `#models/*`, `#repositories/*`, `#services/*`, `#validators/*`, `#middleware/*`, `#database/*`, `#factories/*`, `#start/*`, `#config/*`, `#tests/*` — configurados em `package.json → imports`.
+- **Subpath aliases**: `#controllers/*`, `#models/*`, `#repositories/*`, `#presenters/*`, `#services/*`, `#validators/*`, `#middleware/*`, `#database/*`, `#factories/*`, `#start/*`, `#config/*`, `#tests/*` — configurados em `package.json → imports`.
 - **Controllers finos**: só lidam com HTTP (validação + resposta). Delegam dados ao repository e lógica pura ao service.
 - **Repositories com DI**: toda query Lucid fica em `app/repositories/`. Controllers recebem via `@inject()` no construtor. Nada de `User.query()` direto no controller.
 - **`BaseRepository<Model>`** fornece `findById`, `findByIdOrFail`, `create`, `update`. Cada repo específico só adiciona métodos próprios (`list()` com ordenação da entidade, `findByXYZ`, etc.).
+- **Presenters** em `app/presenters/` são funções puras `present<ViewName>(model[s]) => shape`. Um arquivo por view. Helpers compartilhados (`presentUserSummary`, `presentMatch`) são reusados por outras views. Nunca retorne Lucid models direto do controller — sempre passe pelo presenter apropriado.
 - **Services puros** (sem DB) são preferidos sempre que possível; testes unitários são rápidos.
 - **Prefira `@beforeCreate`/`@beforeFind`/`@beforeFetch` hooks** em vez de lógica espalhada.
 - **Migrations são imutáveis após aplicadas**: para mudar schema, crie uma nova migration.

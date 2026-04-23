@@ -30,6 +30,7 @@
     "#services/*": "./app/services/*.js",
     "#repositories/*": "./app/repositories/*.js",
     "#factories/*": "./database/factories/*.js",
+    "#presenters/*": "./app/presenters/*.js",
     "#listeners/*": "./app/listeners/*.js",
     "#events/*": "./app/events/*.js",
     "#generated/*": "./.adonisjs/server/*.js",

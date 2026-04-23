@@ -4,6 +4,7 @@ import GuessRepository from '#repositories/guess_repository'
 import MatchRepository from '#repositories/match_repository'
 import RoundRepository from '#repositories/round_repository'
 import { canAcceptGuess } from '#services/betting_policy'
+import { presentGuessList } from '#presenters/guess_list_presenter'
 import { createGuessValidator, updateGuessValidator } from '#validators/guess_validator'
 
 @inject()
@@ -41,9 +42,8 @@ export default class GuessesController {
 
   async indexByRound({ params, response }: HttpContext) {
     const match = await this.matchRepository.findByRoundId(params.roundId)
-    if (!match) return response.ok([])
-    const guesses = await this.guessRepository.listByMatchId(match.id)
-    return response.ok(guesses)
+    const guesses = match ? await this.guessRepository.listByMatchId(match.id) : []
+    return response.ok(presentGuessList(match, guesses))
   }
 
   async update({ params, request, response }: HttpContext) {

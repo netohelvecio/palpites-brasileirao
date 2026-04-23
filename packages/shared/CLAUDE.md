@@ -2,11 +2,17 @@
 
 Tipos e constantes compartilhadas entre `apps/api` e futuro `apps/web`. Zero runtime dependencies.
 
-**Exports atuais** (`src/index.ts`):
-- `type RoundStatus = 'pending' | 'open' | 'closed' | 'finished'`
-- `type MatchStatus = 'scheduled' | 'live' | 'finished'`
+**Estrutura:**
+```
+src/
+  index.ts     # re-exporta tudo
+  status.ts    # RoundStatus, MatchStatus (const + type com mesmo nome)
+  views.ts     # Shapes "de fio" dos responses HTTP (UserSummary, MatchView, GuessListItem, GuessListView)
+```
 
-**Constraint:** tudo aqui deve ser seguro para browser (sem `node:*`, sem `fs`, sem `process.env`). Se precisar de runtime Node-only, fica em `apps/api/`.
+**Regra dos view types:** eles representam o **formato JSON do response**, não os models internos. Datas são `string` (ISO 8601), não `DateTime`. Enums são as string literals definidas em `status.ts`. Quando adicionar uma nova view, o presenter (`apps/api/app/presenters/`) faz o mapping de `Match` → `MatchView` serializando explicitamente (`kickoffAt: match.kickoffAt.toISO()!`).
+
+**Constraint:** tudo aqui deve ser seguro para browser (sem `node:*`, sem `fs`, sem `process.env`, **sem luxon/DateTime**). Se precisar de runtime Node-only, fica em `apps/api/`.
 
 > **Contexto global:** ver `../../CLAUDE.md` na raiz do monorepo.
 

@@ -1,16 +1,2 @@
-export const RoundStatus = {
-  PENDING: 'pending',
-  OPEN: 'open',
-  CLOSED: 'closed',
-  FINISHED: 'finished',
-} as const
-
-export type RoundStatus = (typeof RoundStatus)[keyof typeof RoundStatus]
-
-export const MatchStatus = {
-  SCHEDULED: 'scheduled',
-  LIVE: 'live',
-  FINISHED: 'finished',
-} as const
-
-export type MatchStatus = (typeof MatchStatus)[keyof typeof MatchStatus]
+export * from './status.js'
+export * from './views.js'
