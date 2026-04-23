@@ -4,7 +4,10 @@
  */
 
 export const controllers = {
+  Guesses: () => import('#controllers/guesses_controller'),
+  Health: () => import('#controllers/health_controller'),
   Matches: () => import('#controllers/matches_controller'),
+  Ranking: () => import('#controllers/ranking_controller'),
   Rounds: () => import('#controllers/rounds_controller'),
   Seasons: () => import('#controllers/seasons_controller'),
   Users: () => import('#controllers/users_controller'),

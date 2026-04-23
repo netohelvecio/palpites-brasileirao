@@ -11,10 +11,16 @@ const UsersController = () => import('#controllers/users_controller')
 const SeasonsController = () => import('#controllers/seasons_controller')
 const RoundsController = () => import('#controllers/rounds_controller')
 const MatchesController = () => import('#controllers/matches_controller')
+const GuessesController = () => import('#controllers/guesses_controller')
+const RankingController = () => import('#controllers/ranking_controller')
+const HealthController = () => import('#controllers/health_controller')
 
 router.get('/', () => {
   return { hello: 'world' }
 })
+
+router.get('/health', [HealthController, 'index'])
+router.get('/whatsapp/status', [HealthController, 'whatsappStatus'])
 
 router
   .group(() => {
@@ -34,6 +40,14 @@ router
     router.get('/rounds/:roundId/match', [MatchesController, 'show'])
     router.put('/rounds/:roundId/match', [MatchesController, 'upsert'])
     router.post('/rounds/:roundId/match/refresh-score', [MatchesController, 'refreshScore'])
+
+    router.post('/guesses', [GuessesController, 'store'])
+    router.patch('/guesses/:id', [GuessesController, 'update'])
+    router.delete('/guesses/:id', [GuessesController, 'destroy'])
+    router.get('/rounds/:roundId/guesses', [GuessesController, 'indexByRound'])
+
+    router.get('/seasons/:seasonId/ranking', [RankingController, 'bySeason'])
+    router.get('/rounds/:roundId/ranking', [RankingController, 'byRound'])
   })
   .prefix('/api/v1')
   .use(middleware.adminAuth())
