@@ -12,7 +12,7 @@ app/
   models/          # Lucid models (extendem UserSchema/MatchSchema/... de database/schema.ts)
   services/        # Regras de domínio puras e orquestração (score parser, scoring, ranking)
   validators/      # VineJS validators (createUserValidator, etc.)
-  middleware/      # admin_auth_middleware (Bearer), cors, bodyparser
+  middleware/      # admin_auth_middleware (Bearer admin), container_bindings_middleware, force_json_response_middleware
   integrations/    # [futuro] api_football/, whatsapp/ (Baileys)
   jobs/            # [futuro] open_round_job, close_round_job, sync_scores_job
   exceptions/      # handler global

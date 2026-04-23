@@ -15,11 +15,11 @@ server.use([
   () => import('@adonisjs/cors/cors_middleware'),
 ])
 
-router.use([
-  () => import('@adonisjs/core/bodyparser_middleware'),
-])
+router.use([() => import('@adonisjs/core/bodyparser_middleware')])
 
 /**
  * Named middleware collection.
  */
-export const middleware = router.named({})
+export const middleware = router.named({
+  adminAuth: () => import('#middleware/admin_auth_middleware'),
+})
