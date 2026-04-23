@@ -23,6 +23,7 @@ config/
 database/
   migrations/      # 0001_..0006_ — numeradas manualmente para ordem explícita
   factories/       # factories Lucid para testes (UserFactory, SeasonFactory, ...) via @adonisjs/lucid/factories + @faker-js/faker
+  seeders/         # seeders de desenvolvimento (ex: rounds_seeder popula season + 38 rodadas). Roda via `pnpm db:seed`. Idempotente.
   schema.ts        # AUTO-GERADO pós migration:run — NÃO EDITAR À MÃO
 start/
   env.ts           # validação de env vars
