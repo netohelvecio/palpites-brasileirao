@@ -4,6 +4,8 @@
  */
 
 export const controllers = {
+  Matches: () => import('#controllers/matches_controller'),
+  Rounds: () => import('#controllers/rounds_controller'),
   Seasons: () => import('#controllers/seasons_controller'),
   Users: () => import('#controllers/users_controller'),
 }
