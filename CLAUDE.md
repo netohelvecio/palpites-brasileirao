@@ -101,8 +101,8 @@ pnpm --filter @palpites/shared lint
 
 | Fase | Status | Escopo |
 |---|---|---|
-| Plano 1 (1.1–1.8) | em execução | Foundation + Core Domain (monorepo, schema, models, serviços, endpoints admin) |
-| Plano 2 | pendente | API-Football integration (sync, featured match picker, refresh scores) |
+| Plano 1 (1.1–1.8) | ✅ concluído | Foundation + Core Domain — monorepo, schema, models, serviços (betting_policy, score_parser, scoring, ranking), endpoints admin completos, 68 tests passando |
+| Plano 2 (2.1–2.4) | 📝 escrito, pronto p/ executar | API-Football integration — client axios, featured match picker, sync service, refresh scores. Planos em `docs/superpowers/plans/2026-04-23-plan-2.*.md` |
 | Plano 3 | pendente | Scheduler + jobs (open/close/sync) — ainda sem WhatsApp |
 | Plano 4 | pendente | Baileys + message handler/sender — substitui logs por mensagens reais |
 

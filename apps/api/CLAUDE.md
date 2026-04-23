@@ -122,11 +122,14 @@ node ace test unit --files='tests/unit/score_parser.spec.ts'
 
 Bootstrap roda `testUtils.db().migrate()` só em suites `functional`/`e2e` (unit tests não tocam DB). Cada test group usa `group.each.setup(() => testUtils.db().wrapInGlobalTransaction())` pra rollback automático (**não** `withGlobalTransaction`, que está deprecado).
 
+**Gotcha:** se testes falharem com `ECONNREFUSED 127.0.0.1:5433`, o container `palpites_postgres_test` caiu. `docker compose up -d` da raiz sobe de novo.
+
 **Factories** em `database/factories/` geram dados de teste. Padrão: `await UserFactory.create()`, `await UserFactory.createMany(3)`, `await UserFactory.merge({ isAdmin: true }).create()`. Evitam duplicar setup e dão dados realistas via Faker. IDs continuam gerados pelo `@beforeCreate` hook do model.
 
 ## Coisas a evitar
 
 - **Não usar `vine.compile(vine.object(...))`** — API deprecada. O padrão atual é `vine.create({...})` direto com o shape do objeto.
+- **`vine.date()` sem `formats` rejeita strings** — para receber ISO do JSON use `vine.date({ formats: ['iso8601'] })`. Default do VineJS 4 só aceita instância `Date`.
 - **Não reintroduzir** `@adonisjs/auth`, `@adonisjs/session`, `@adonisjs/shield` — foram removidos de propósito.
 - **Não escrever CRUD genérico** ou BaseController — prefira controllers explícitos por recurso.
 - **Não gerar migrations com timestamp automático** (`node ace make:migration`) — convenção **nossa** é usar prefixo numérico manual (`0007_`, `0008_`...) pra manter ordem estável e legível. O Adonis aceita os dois formatos.
