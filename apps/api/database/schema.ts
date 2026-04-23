@@ -3,3 +3,201 @@
  * DO NOT EDIT manually
  * Run "node ace migration:run" command to re-generate this file
  */
+
+import { BaseModel, column } from '@adonisjs/lucid/orm'
+import { DateTime } from 'luxon'
+
+export class GuessSchema extends BaseModel {
+  static $columns = [
+    'awayScore',
+    'createdAt',
+    'homeScore',
+    'id',
+    'isDeleted',
+    'matchId',
+    'points',
+    'updatedAt',
+    'userId',
+  ] as const
+  $columns = GuessSchema.$columns
+  @column()
+  declare awayScore: number
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare homeScore: number
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare isDeleted: boolean
+  @column()
+  declare matchId: string
+  @column()
+  declare points: number | null
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare userId: string
+}
+
+export class MatchSchema extends BaseModel {
+  static $columns = [
+    'awayScore',
+    'awayTeam',
+    'createdAt',
+    'externalId',
+    'homeScore',
+    'homeTeam',
+    'id',
+    'isDeleted',
+    'kickoffAt',
+    'roundId',
+    'status',
+    'updatedAt',
+  ] as const
+  $columns = MatchSchema.$columns
+  @column()
+  declare awayScore: number | null
+  @column()
+  declare awayTeam: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare externalId: number
+  @column()
+  declare homeScore: number | null
+  @column()
+  declare homeTeam: string
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare isDeleted: boolean
+  @column.dateTime()
+  declare kickoffAt: DateTime
+  @column()
+  declare roundId: string
+  @column()
+  declare status: any
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
+export class RoundSchema extends BaseModel {
+  static $columns = [
+    'createdAt',
+    'id',
+    'isDeleted',
+    'number',
+    'seasonId',
+    'status',
+    'updatedAt',
+  ] as const
+  $columns = RoundSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare isDeleted: boolean
+  @column()
+  declare number: number
+  @column()
+  declare seasonId: string
+  @column()
+  declare status: any
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
+export class ScoreSchema extends BaseModel {
+  static $columns = [
+    'exactScoresCount',
+    'id',
+    'isDeleted',
+    'seasonId',
+    'totalPoints',
+    'updatedAt',
+    'userId',
+  ] as const
+  $columns = ScoreSchema.$columns
+  @column()
+  declare exactScoresCount: number
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare isDeleted: boolean
+  @column()
+  declare seasonId: string
+  @column()
+  declare totalPoints: number
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare userId: string
+}
+
+export class SeasonSchema extends BaseModel {
+  static $columns = [
+    'createdAt',
+    'endsAt',
+    'externalLeagueId',
+    'id',
+    'isActive',
+    'isDeleted',
+    'name',
+    'startsAt',
+    'updatedAt',
+    'year',
+  ] as const
+  $columns = SeasonSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column.dateTime()
+  declare endsAt: DateTime
+  @column()
+  declare externalLeagueId: number
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare isActive: boolean
+  @column()
+  declare isDeleted: boolean
+  @column()
+  declare name: string
+  @column.dateTime()
+  declare startsAt: DateTime
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare year: number
+}
+
+export class UserSchema extends BaseModel {
+  static $columns = [
+    'createdAt',
+    'emoji',
+    'id',
+    'isAdmin',
+    'isDeleted',
+    'name',
+    'updatedAt',
+    'whatsappNumber',
+  ] as const
+  $columns = UserSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare emoji: string
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare isAdmin: boolean
+  @column()
+  declare isDeleted: boolean
+  @column()
+  declare name: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare whatsappNumber: string
+}
