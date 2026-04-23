@@ -92,12 +92,14 @@ Todas validadas em `start/env.ts`. Nunca acesse `process.env` direto.
 ## Scripts do package.json
 
 ```bash
-pnpm dev         # node ace serve --hmr
-pnpm test        # node ace test
-pnpm typecheck   # tsc --noEmit
-pnpm lint        # eslint .
-pnpm format      # prettier --write .
-pnpm build       # node ace build (produção)
+pnpm dev              # node ace serve --hmr
+pnpm test             # todos os testes (unit + functional)
+pnpm test:unit        # apenas unit
+pnpm test:functional  # apenas functional
+pnpm typecheck        # tsc --noEmit
+pnpm lint             # eslint .
+pnpm format           # prettier --write .
+pnpm build            # node ace build (produção)
 ```
 
 Migrations e seeds são via `node ace migration:*` — não têm atalho no package.json.

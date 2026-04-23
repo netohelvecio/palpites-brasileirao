@@ -14,12 +14,13 @@ export const plugins: Config['plugins'] = [
 ]
 
 export const runnerHooks: Required<Pick<Config, 'setup' | 'teardown'>> = {
-  setup: [() => testUtils.db().migrate()],
+  setup: [],
   teardown: [],
 }
 
 export const configureSuite: Config['configureSuite'] = (suite) => {
   if (['browser', 'functional', 'e2e'].includes(suite.name)) {
-    return suite.setup(() => testUtils.httpServer().start())
+    suite.setup(() => testUtils.db().migrate())
+    suite.setup(() => testUtils.httpServer().start())
   }
 }
