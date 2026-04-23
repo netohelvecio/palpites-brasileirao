@@ -26,4 +26,8 @@ export default await Env.create(new URL('../', import.meta.url), {
 
   // Admin auth
   ADMIN_API_TOKEN: Env.schema.string(),
+
+  // API-Football
+  API_FOOTBALL_BASE_URL: Env.schema.string({ format: 'url', tld: false }),
+  API_FOOTBALL_KEY: Env.schema.string.optional(),
 })

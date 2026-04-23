@@ -43,7 +43,8 @@
     "#database/*": "./database/*.js",
     "#tests/*": "./tests/*.js",
     "#start/*": "./start/*.js",
-    "#config/*": "./config/*.js"
+    "#config/*": "./config/*.js",
+    "#integrations/*": "./app/integrations/*.js"
   },
   "devDependencies": {
     "@adonisjs/assembler": "^8.4.0",
@@ -73,6 +74,7 @@
     "@palpites/shared": "workspace:^",
     "@tuyau/core": "^1.2.2",
     "@vinejs/vine": "^4.3.1",
+    "axios": "^1.15.2",
     "luxon": "^3.7.2",
     "pg": "^8.20.0",
     "reflect-metadata": "^0.2.2"
