@@ -3,4 +3,7 @@
  * DO NOT EDIT manually
  */
 
-export const controllers = {}
+export const controllers = {
+  Seasons: () => import('#controllers/seasons_controller'),
+  Users: () => import('#controllers/users_controller'),
+}

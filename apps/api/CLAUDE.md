@@ -8,8 +8,9 @@ API Adonis 7 responsável por todo o backend: HTTP REST (admin), integração Wh
 
 ```
 app/
-  controllers/     # HTTP controllers finos: validam input, delegam ao service
+  controllers/     # HTTP controllers finos: validam input, delegam ao repository/service
   models/          # Lucid models (extendem UserSchema/MatchSchema/... de database/schema.ts)
+  repositories/    # Acesso a dados via DI — encapsulam queries Lucid, evitam duplicação
   services/        # Regras de domínio puras e orquestração (score parser, scoring, ranking)
   validators/      # VineJS validators (createUserValidator, etc.)
   middleware/      # admin_auth_middleware (Bearer admin), container_bindings_middleware, force_json_response_middleware
@@ -21,6 +22,7 @@ config/
   app.ts, cors.ts, bodyparser.ts, hash.ts, logger.ts, encryption.ts
 database/
   migrations/      # 0001_..0006_ — numeradas manualmente para ordem explícita
+  factories/       # factories Lucid para testes (UserFactory, SeasonFactory, ...) via @adonisjs/lucid/factories + @faker-js/faker
   schema.ts        # AUTO-GERADO pós migration:run — NÃO EDITAR À MÃO
 start/
   env.ts           # validação de env vars
@@ -35,8 +37,10 @@ tests/
 ## Convenções locais
 
 - **ESM obrigatório**: arquivos em TS, imports com `.js` nos caminhos relativos (`import Foo from './foo.js'`).
-- **Subpath aliases**: `#controllers/*`, `#models/*`, `#services/*`, `#validators/*`, `#middleware/*`, `#database/*`, `#start/*`, `#config/*`, `#tests/*` — configurados em `package.json → imports`.
-- **Controllers finos**: só lidam com HTTP (validação + resposta). Lógica vai em services.
+- **Subpath aliases**: `#controllers/*`, `#models/*`, `#repositories/*`, `#services/*`, `#validators/*`, `#middleware/*`, `#database/*`, `#factories/*`, `#start/*`, `#config/*`, `#tests/*` — configurados em `package.json → imports`.
+- **Controllers finos**: só lidam com HTTP (validação + resposta). Delegam dados ao repository e lógica pura ao service.
+- **Repositories com DI**: toda query Lucid fica em `app/repositories/`. Controllers recebem via `@inject()` no construtor. Nada de `User.query()` direto no controller.
+- **`BaseRepository<Model>`** fornece `findById`, `findByIdOrFail`, `create`, `update`. Cada repo específico só adiciona métodos próprios (`list()` com ordenação da entidade, `findByXYZ`, etc.).
 - **Services puros** (sem DB) são preferidos sempre que possível; testes unitários são rápidos.
 - **Prefira `@beforeCreate`/`@beforeFind`/`@beforeFetch` hooks** em vez de lógica espalhada.
 - **Migrations são imutáveis após aplicadas**: para mudar schema, crie uma nova migration.
@@ -113,10 +117,13 @@ node ace test functional   # só funcionais
 node ace test unit --files='tests/unit/score_parser.spec.ts'
 ```
 
-Bootstrap roda `testUtils.db().migrate()` no início. Cada test group usa `group.each.setup(() => testUtils.db().withGlobalTransaction())` pra rollback automático.
+Bootstrap roda `testUtils.db().migrate()` só em suites `functional`/`e2e` (unit tests não tocam DB). Cada test group usa `group.each.setup(() => testUtils.db().wrapInGlobalTransaction())` pra rollback automático (**não** `withGlobalTransaction`, que está deprecado).
+
+**Factories** em `database/factories/` geram dados de teste. Padrão: `await UserFactory.create()`, `await UserFactory.createMany(3)`, `await UserFactory.merge({ isAdmin: true }).create()`. Evitam duplicar setup e dão dados realistas via Faker. IDs continuam gerados pelo `@beforeCreate` hook do model.
 
 ## Coisas a evitar
 
+- **Não usar `vine.compile(vine.object(...))`** — API deprecada. O padrão atual é `vine.create({...})` direto com o shape do objeto.
 - **Não reintroduzir** `@adonisjs/auth`, `@adonisjs/session`, `@adonisjs/shield` — foram removidos de propósito.
 - **Não escrever CRUD genérico** ou BaseController — prefira controllers explícitos por recurso.
 - **Não gerar migrations com timestamp automático** (`node ace make:migration`) — convenção **nossa** é usar prefixo numérico manual (`0007_`, `0008_`...) pra manter ordem estável e legível. O Adonis aceita os dois formatos.
