@@ -13,8 +13,8 @@ test.group('FootballDataMappers', () => {
       utcDate: '2026-05-04T20:00:00Z',
       status: 'SCHEDULED',
       matchday: 12,
-      homeTeam: { id: 1765, name: 'Palmeiras' },
-      awayTeam: { id: 1783, name: 'Flamengo' },
+      homeTeam: { id: 1765, name: 'Sociedade Esportiva Palmeiras', shortName: 'Palmeiras' },
+      awayTeam: { id: 1783, name: 'Clube de Regatas do Flamengo', shortName: 'Flamengo' },
       score: { fullTime: { home: null, away: null }, winner: null },
     } as any)
 

@@ -58,8 +58,8 @@ test.group('Seasons', (group) => {
       assert.equal(res.body().currentMatchday, 12)
       assert.equal(res.body().created, true)
       assert.equal(res.body().skipped, false)
-      assert.equal(res.body().match.homeTeam, 'Team1')
-      assert.equal(res.body().match.awayTeam, 'Team2')
+      assert.equal(res.body().match.homeTeam, 'T1')
+      assert.equal(res.body().match.awayTeam, 'T2')
       assert.equal(res.body().match.status, 'scheduled')
     } finally {
       app.container.restore(FootballDataClient)

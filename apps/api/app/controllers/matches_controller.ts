@@ -2,13 +2,15 @@ import { inject } from '@adonisjs/core'
 import type { HttpContext } from '@adonisjs/core/http'
 import MatchRepository from '#repositories/match_repository'
 import RoundRepository from '#repositories/round_repository'
+import RefreshMatchService from '#services/refresh_match_service'
 import { upsertMatchValidator } from '#validators/match_validator'
 
 @inject()
 export default class MatchesController {
   constructor(
     private matchRepository: MatchRepository,
-    private roundRepository: RoundRepository
+    private roundRepository: RoundRepository,
+    private refreshMatchService: RefreshMatchService
   ) {}
 
   async show({ params, response }: HttpContext) {
@@ -41,10 +43,9 @@ export default class MatchesController {
   }
 
   async refreshScore({ params, response }: HttpContext) {
-    // Stub: implementação real da API-Football vem no Plano 2.
-    return response.accepted({
-      message: 'refresh será implementado no plano 2',
-      roundId: params.roundId,
-    })
+    const match = await this.matchRepository.findByRoundId(params.roundId)
+    if (!match) return response.notFound({ error: 'match not found' })
+    const report = await this.refreshMatchService.refresh(match.id)
+    return response.ok(report)
   }
 }

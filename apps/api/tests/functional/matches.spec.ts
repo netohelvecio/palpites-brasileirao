@@ -1,7 +1,10 @@
 import { test } from '@japa/runner'
+import app from '@adonisjs/core/services/app'
 import testUtils from '@adonisjs/core/services/test_utils'
+import FootballDataClient from '#integrations/football_data/client'
 import { RoundFactory } from '#factories/round_factory'
 import { MatchFactory } from '#factories/match_factory'
+import { FakeFootballDataClient, fakeMatch } from '#tests/helpers/football_data_mock'
 
 const HEADERS = { authorization: 'Bearer test-admin-token' }
 
@@ -49,10 +52,73 @@ test.group('Matches', (group) => {
     res.assertStatus(404)
   })
 
-  test('POST /rounds/:roundId/match/refresh-score retorna 202 (stub)', async ({ client }) => {
+  test('POST /rounds/:roundId/match/refresh-score atualiza placar e status', async ({
+    client,
+    assert,
+  }) => {
+    const round = await RoundFactory.with('season').create()
+    const match = await MatchFactory.merge({
+      roundId: round.id,
+      externalId: 1001,
+      status: 'scheduled',
+      homeScore: null,
+      awayScore: null,
+    }).create()
+
+    const fake = new FakeFootballDataClient()
+    fake.matchById.set(
+      1001,
+      fakeMatch(1001, 1, 2, 12, {
+        status: 'FINISHED',
+        score: { fullTime: { home: 2, away: 1 }, winner: 'HOME_TEAM' },
+      })
+    )
+
+    app.container.swap(FootballDataClient, () => fake as any)
+    try {
+      const res = await client
+        .post(`/api/v1/rounds/${round.id}/match/refresh-score`)
+        .headers(HEADERS)
+      res.assertStatus(200)
+      assert.equal(res.body().updated, true)
+
+      await match.refresh()
+      assert.equal(match.homeScore, 2)
+      assert.equal(match.awayScore, 1)
+      assert.equal(match.status, 'finished')
+    } finally {
+      app.container.restore(FootballDataClient)
+    }
+  })
+
+  test('POST /rounds/:roundId/match/refresh-score retorna reason quando provider não acha', async ({
+    client,
+    assert,
+  }) => {
+    const round = await RoundFactory.with('season').create()
+    await MatchFactory.merge({ roundId: round.id, externalId: 9999 }).create()
+
+    const fake = new FakeFootballDataClient()
+
+    app.container.swap(FootballDataClient, () => fake as any)
+    try {
+      const res = await client
+        .post(`/api/v1/rounds/${round.id}/match/refresh-score`)
+        .headers(HEADERS)
+      res.assertStatus(200)
+      assert.equal(res.body().updated, false)
+      assert.match(res.body().reason, /não encontrado/i)
+    } finally {
+      app.container.restore(FootballDataClient)
+    }
+  })
+
+  test('POST /rounds/:roundId/match/refresh-score 404 quando round não tem match', async ({
+    client,
+  }) => {
     const round = await RoundFactory.with('season').create()
     const res = await client.post(`/api/v1/rounds/${round.id}/match/refresh-score`).headers(HEADERS)
-    res.assertStatus(202)
+    res.assertStatus(404)
   })
 
   test('PUT /rounds/:roundId/match exige bearer token', async ({ client }) => {

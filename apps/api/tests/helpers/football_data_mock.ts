@@ -43,7 +43,7 @@ export function fakeStandings(
         group: null,
         table: Object.entries(pointsByTeamId).map(([id, points], idx) => ({
           position: idx + 1,
-          team: { id: Number(id), name: `Team${id}` },
+          team: { id: Number(id), name: `Team${id}`, shortName: `T${id}` },
           points,
           playedGames: Math.max(0, currentMatchday - 1),
         })),
@@ -64,8 +64,8 @@ export function fakeMatch(
     utcDate: '2026-05-04T20:00:00Z',
     status: 'SCHEDULED',
     matchday,
-    homeTeam: { id: homeId, name: `Team${homeId}` },
-    awayTeam: { id: awayId, name: `Team${awayId}` },
+    homeTeam: { id: homeId, name: `Team${homeId}`, shortName: `T${homeId}` },
+    awayTeam: { id: awayId, name: `Team${awayId}`, shortName: `T${awayId}` },
     score: { fullTime: { home: null, away: null }, winner: null },
     ...overrides,
   }
