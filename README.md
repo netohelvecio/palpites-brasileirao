@@ -25,7 +25,7 @@ A cada rodada, o jogo "oficial do bolão" é o confronto com maior soma de ponto
 
 ### Integrações previstas
 
-- [API-Football](https://www.api-football.com/) — dados de jogos, rodadas e tabela (liga `71`)
+- [football-data.org](https://www.football-data.org/) — dados de jogos, rodadas e tabela (competition `BSA`)
 - [Baileys](https://github.com/WhiskeySockets/Baileys) — integração com WhatsApp (chip dedicado)
 - [node-cron](https://github.com/node-cron/node-cron) — agendamento de jobs (abrir/fechar rodada, sincronizar placares)
 
@@ -59,6 +59,7 @@ docker compose up -d              # Postgres dev (5432) + test (5433)
 
 cp apps/api/.env.example apps/api/.env
 # edite o .env e defina APP_KEY, DB_* e ADMIN_API_TOKEN
+# opcional: FOOTBALL_DATA_TOKEN pra chamadas reais ao provider (https://www.football-data.org/client/register)
 
 cd apps/api && node ace migration:run
 ```
@@ -116,8 +117,8 @@ Entidades principais: `users`, `seasons`, `rounds`, `matches`, `guesses`, `score
 
 | Fase | Status | Escopo |
 |---|---|---|
-| 1 — Foundation + Core Domain | em execução | Monorepo, schema, models, serviços, endpoints admin |
-| 2 — API-Football | pendente | Sync de rodadas/jogos, picker do jogo em destaque, refresh de placares |
+| 1 — Foundation + Core Domain | ✅ concluída | Monorepo, schema, models, serviços, endpoints admin |
+| 2 — football-data.org | ✅ concluída | Sync da rodada atual, picker do jogo em destaque, refresh de placares |
 | 3 — Scheduler | pendente | Jobs recorrentes (abrir/fechar rodada, sincronizar placares) |
 | 4 — WhatsApp | pendente | Integração Baileys, parser de palpites, envio de ranking |
 

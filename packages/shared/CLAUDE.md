@@ -26,7 +26,7 @@ src/
 
 - **Runtime code** com side effects (logger, http client, config).
 - **Lucid models** — ficam em `apps/api/app/models/`.
-- **Integrações externas** (API-Football, Baileys) — ficam em `apps/api/app/integrations/`.
+- **Integrações externas** (football-data.org, Baileys) — ficam em `apps/api/app/integrations/`.
 - **Dependências pesadas** — o pacote deve ser importável tanto por Node (API) quanto por browser (futuro web) sem polyfills.
 
 ## Convenções

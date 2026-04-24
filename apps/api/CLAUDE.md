@@ -15,7 +15,7 @@ app/
   services/        # Regras de domínio puras e orquestração (score parser, scoring, ranking, betting policy)
   validators/      # VineJS validators (createUserValidator, etc.)
   middleware/      # admin_auth_middleware (Bearer admin), container_bindings_middleware, force_json_response_middleware
-  integrations/    # [futuro] api_football/, whatsapp/ (Baileys)
+  integrations/    # football_data/ (client + mappers + types); whatsapp/ virá via Baileys no plano 4
   jobs/            # [futuro] open_round_job, close_round_job, sync_scores_job
   exceptions/      # handler global
 config/
@@ -24,7 +24,7 @@ config/
 database/
   migrations/      # 0001_..0006_ — numeradas manualmente para ordem explícita
   factories/       # factories Lucid para testes (UserFactory, SeasonFactory, ...) via @adonisjs/lucid/factories + @faker-js/faker
-  seeders/         # seeders de desenvolvimento (ex: rounds_seeder popula season + 38 rodadas). Roda via `pnpm db:seed`. Idempotente.
+  seeders/         # seeders de desenvolvimento. Atualmente vazio — rounds são criadas sob demanda pelo `FixturesSyncService` quando o `currentMatchday` chega.
   schema.ts        # AUTO-GERADO pós migration:run — NÃO EDITAR À MÃO
 start/
   env.ts           # validação de env vars
@@ -92,6 +92,7 @@ Todas validadas em `start/env.ts`. Nunca acesse `process.env` direto.
 - `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_DATABASE`
 - `ADMIN_API_TOKEN` — bearer token único usado pelo `admin_auth_middleware`
 - `APP_KEY`, `APP_URL`, `PORT`, `HOST`, `NODE_ENV`, `LOG_LEVEL`, `TZ`
+- `FOOTBALL_DATA_BASE_URL`, `FOOTBALL_DATA_TOKEN` — integração football-data.org (token opcional; tests usam mock via `container.swap`)
 - **Não usar** `SESSION_*` (sessões foram removidas)
 
 `.env.test` aponta pra Postgres de teste (porta 5433, DB `palpites_test`).
@@ -122,7 +123,11 @@ node ace test unit --files='tests/unit/score_parser.spec.ts'
 
 Bootstrap roda `testUtils.db().migrate()` só em suites `functional`/`e2e` (unit tests não tocam DB). Cada test group usa `group.each.setup(() => testUtils.db().wrapInGlobalTransaction())` pra rollback automático (**não** `withGlobalTransaction`, que está deprecado).
 
+**Mockar clients de integração externa:** `app.container.swap(Client, () => fake as any)` no setup + `app.container.restore(Client)` em `finally`. Template: `tests/helpers/football_data_mock.ts` (`FakeFootballDataClient`). Uso típico em `tests/functional/seasons.spec.ts` e `matches.spec.ts`.
+
 **Gotcha:** se testes falharem com `ECONNREFUSED 127.0.0.1:5433`, o container `palpites_postgres_test` caiu. `docker compose up -d` da raiz sobe de novo.
+
+**REPL via stdin gotcha:** `node ace repl` alimentado por pipe fecha stdin rápido demais pro `await` top-level completar em scripts multiline. Use um IIFE async em uma única linha: `printf '(async () => { const m = await import("..."); ... })()\n' | node ace repl`.
 
 **Factories** em `database/factories/` geram dados de teste. Padrão: `await UserFactory.create()`, `await UserFactory.createMany(3)`, `await UserFactory.merge({ isAdmin: true }).create()`. Evitam duplicar setup e dão dados realistas via Faker. IDs continuam gerados pelo `@beforeCreate` hook do model.
 

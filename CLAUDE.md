@@ -50,11 +50,11 @@ docs/
 - **Package manager:** pnpm 9
 - **Build orquestrador:** Turborepo
 
-### Integrações externas planejadas (ainda não implementadas)
+### Integrações externas
 
-- **API-Football** (`api-football.com`) — jogos, rodadas, tabela do Brasileirão (`league=71`)
-- **Baileys** (`@whiskeysockets/baileys`) — integração WhatsApp com **chip secundário dedicado** (não número pessoal)
-- **node-cron** — jobs recorrentes; BullMQ/Redis foi **descartado** por YAGNI (10 usuários)
+- **football-data.org v4** (`api.football-data.org/v4`) — jogos, rodadas, tabela (`competition code=BSA`). Auth via header `X-Auth-Token`. Free tier ~10 req/min. Implementado na Fase 2.
+- **Baileys** (`@whiskeysockets/baileys`) — integração WhatsApp com **chip secundário dedicado** (não número pessoal). Planejado pra Fase 4.
+- **node-cron** — jobs recorrentes; BullMQ/Redis foi **descartado** por YAGNI (10 usuários). Planejado pra Fase 3.
 
 ## Decisões arquiteturais importantes
 
@@ -101,8 +101,8 @@ pnpm --filter @palpites/shared lint
 
 | Fase | Status | Escopo |
 |---|---|---|
-| Plano 1 (1.1–1.8) | ✅ concluído | Foundation + Core Domain — monorepo, schema, models, serviços (betting_policy, score_parser, scoring, ranking), endpoints admin completos, 68 tests passando |
-| Plano 2 (2.1–2.4) | 📝 escrito, pronto p/ executar | API-Football integration — client axios, featured match picker, sync service, refresh scores. Planos em `docs/superpowers/plans/2026-04-23-plan-2.*.md` |
+| Plano 1 (1.1–1.8) | ✅ concluído | Foundation + Core Domain — monorepo, schema, models, serviços (betting_policy, score_parser, scoring, ranking), endpoints admin completos |
+| Plano 2 (2.0–2.4) | ✅ concluído | football-data.org integration — cleanup + client axios, featured match picker (puro), current-matchday sync (lazy round creation), refresh score. Planos em `docs/superpowers/plans/2026-04-24-plan-2.*.md` (+ `2026-04-23-plan-2.2-featured-match-picker.md`) |
 | Plano 3 | pendente | Scheduler + jobs (open/close/sync) — ainda sem WhatsApp |
 | Plano 4 | pendente | Baileys + message handler/sender — substitui logs por mensagens reais |
 
