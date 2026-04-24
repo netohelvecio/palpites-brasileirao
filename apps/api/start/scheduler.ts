@@ -2,6 +2,7 @@ import cron from 'node-cron'
 import app from '@adonisjs/core/services/app'
 import logger from '@adonisjs/core/services/logger'
 import OpenRoundJob from '#jobs/open_round_job'
+import CloseRoundJob from '#jobs/close_round_job'
 
 /**
  * Registra os cron jobs ao subir a aplicação.
@@ -20,6 +21,20 @@ cron.schedule(
       await job.run()
     } catch (err) {
       logger.error({ err }, 'scheduler: OpenRoundJob crashed')
+    }
+  },
+  { timezone: TZ }
+)
+
+// CloseRoundJob: a cada 5 min
+cron.schedule(
+  '*/5 * * * *',
+  async () => {
+    try {
+      const job = await app.container.make(CloseRoundJob)
+      await job.run()
+    } catch (err) {
+      logger.error({ err }, 'scheduler: CloseRoundJob crashed')
     }
   },
   { timezone: TZ }

@@ -1,4 +1,5 @@
 import { inject } from '@adonisjs/core'
+import { DateTime } from 'luxon'
 import Round from '#models/round'
 import BaseRepository from '#repositories/base_repository'
 
@@ -19,5 +20,14 @@ export default class RoundRepository extends BaseRepository<typeof Round> {
       .where('id', id)
       .preload('match', (m) => m.preload('guesses'))
       .firstOrFail()
+  }
+
+  listOpenPastKickoff(date: DateTime) {
+    return Round.query()
+      .where('status', 'open')
+      .whereHas('match', (m) => {
+        m.where('kickoff_at', '<=', date.toJSDate())
+      })
+      .preload('match')
   }
 }
