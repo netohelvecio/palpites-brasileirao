@@ -8,7 +8,7 @@ export const SeasonFactory = factory
     return {
       year,
       name: `Brasileirão ${year}`,
-      externalLeagueId: 71,
+      externalCompetitionCode: 'BSA',
       isActive: true,
       startsAt: DateTime.fromObject({ year, month: 4, day: 12 }),
       endsAt: DateTime.fromObject({ year, month: 12, day: 8 }),

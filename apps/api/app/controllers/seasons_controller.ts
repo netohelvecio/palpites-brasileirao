@@ -26,9 +26,9 @@ export default class SeasonsController {
   }
 
   async sync({ params, response }: HttpContext) {
-    // Stub: implementação real da API-Football vem no Plano 2.
+    // Stub: implementação real vem no plano 2.3 (football-data.org).
     return response.accepted({
-      message: 'sync será implementado no plano 2',
+      message: 'sync será implementado no plano 2 (football-data.org)',
       seasonId: params.id,
     })
   }

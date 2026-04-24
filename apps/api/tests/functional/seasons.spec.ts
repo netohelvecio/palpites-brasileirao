@@ -6,7 +6,7 @@ const HEADERS = { authorization: 'Bearer test-admin-token' }
 const BASE_PAYLOAD = {
   year: 2026,
   name: 'Brasileirão 2026',
-  externalLeagueId: 71,
+  externalCompetitionCode: 'BSA',
   isActive: true,
   startsAt: '2026-04-12T00:00:00.000Z',
   endsAt: '2026-12-08T00:00:00.000Z',

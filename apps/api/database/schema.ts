@@ -140,7 +140,7 @@ export class SeasonSchema extends BaseModel {
   static $columns = [
     'createdAt',
     'endsAt',
-    'externalLeagueId',
+    'externalCompetitionCode',
     'id',
     'isActive',
     'isDeleted',
@@ -155,7 +155,7 @@ export class SeasonSchema extends BaseModel {
   @column.dateTime()
   declare endsAt: DateTime
   @column()
-  declare externalLeagueId: number
+  declare externalCompetitionCode: string
   @column({ isPrimary: true })
   declare id: string
   @column()
