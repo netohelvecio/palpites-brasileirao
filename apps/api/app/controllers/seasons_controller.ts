@@ -1,11 +1,15 @@
 import { inject } from '@adonisjs/core'
 import type { HttpContext } from '@adonisjs/core/http'
 import SeasonRepository from '#repositories/season_repository'
+import FixturesSyncService from '#services/fixtures_sync_service'
 import { createSeasonValidator, updateSeasonValidator } from '#validators/season_validator'
 
 @inject()
 export default class SeasonsController {
-  constructor(private seasonRepository: SeasonRepository) {}
+  constructor(
+    private seasonRepository: SeasonRepository,
+    private fixturesSyncService: FixturesSyncService
+  ) {}
 
   async store({ request, response }: HttpContext) {
     const payload = await request.validateUsing(createSeasonValidator)
@@ -26,10 +30,7 @@ export default class SeasonsController {
   }
 
   async sync({ params, response }: HttpContext) {
-    // Stub: implementação real vem no plano 2.3 (football-data.org).
-    return response.accepted({
-      message: 'sync será implementado no plano 2 (football-data.org)',
-      seasonId: params.id,
-    })
+    const report = await this.fixturesSyncService.syncCurrentMatchday(params.id)
+    return response.ok(report)
   }
 }

@@ -10,6 +10,10 @@ export default class RoundRepository extends BaseRepository<typeof Round> {
     return Round.query().where('season_id', seasonId).orderBy('number', 'asc')
   }
 
+  findBySeasonAndNumber(seasonId: string, number: number) {
+    return Round.query().where('season_id', seasonId).where('number', number).first()
+  }
+
   findByIdWithMatchAndGuesses(id: string) {
     return Round.query()
       .where('id', id)

@@ -17,6 +17,7 @@ export type FootballDataMatchStatus =
 export interface FootballDataTeam {
   id: number
   name: string
+  shortName: string
 }
 
 export interface FootballDataSeason {
