@@ -14,6 +14,16 @@ export default class GuessRepository extends BaseRepository<typeof Guess> {
     return Guess.query().where('match_id', matchId).preload('user')
   }
 
+  listBySeasonAndUser(seasonId: string, userId: string) {
+    return Guess.query()
+      .where('user_id', userId)
+      .whereHas('match', (m) => {
+        m.where('status', 'finished').whereHas('round', (r) => {
+          r.where('season_id', seasonId)
+        })
+      })
+  }
+
   async softDelete(guess: Guess) {
     guess.isDeleted = true
     await guess.save()

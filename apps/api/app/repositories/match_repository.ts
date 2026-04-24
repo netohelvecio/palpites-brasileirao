@@ -9,4 +9,15 @@ export default class MatchRepository extends BaseRepository<typeof Match> {
   findByRoundId(roundId: string) {
     return Match.query().where('round_id', roundId).first()
   }
+
+  listActiveNonFinished() {
+    return Match.query()
+      .whereNot('status', 'finished')
+      .whereHas('round', (r) => {
+        r.whereHas('season', (s) => {
+          s.where('is_active', true)
+        })
+      })
+      .preload('round')
+  }
 }

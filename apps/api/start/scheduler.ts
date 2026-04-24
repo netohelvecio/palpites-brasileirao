@@ -3,6 +3,7 @@ import app from '@adonisjs/core/services/app'
 import logger from '@adonisjs/core/services/logger'
 import OpenRoundJob from '#jobs/open_round_job'
 import CloseRoundJob from '#jobs/close_round_job'
+import SyncScoresJob from '#jobs/sync_scores_job'
 
 /**
  * Registra os cron jobs ao subir a aplicação.
@@ -35,6 +36,20 @@ cron.schedule(
       await job.run()
     } catch (err) {
       logger.error({ err }, 'scheduler: CloseRoundJob crashed')
+    }
+  },
+  { timezone: TZ }
+)
+
+// SyncScoresJob: a cada 10 min
+cron.schedule(
+  '*/10 * * * *',
+  async () => {
+    try {
+      const job = await app.container.make(SyncScoresJob)
+      await job.run()
+    } catch (err) {
+      logger.error({ err }, 'scheduler: SyncScoresJob crashed')
     }
   },
   { timezone: TZ }
