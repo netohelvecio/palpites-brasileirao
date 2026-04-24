@@ -9,4 +9,8 @@ export default class SeasonRepository extends BaseRepository<typeof Season> {
   list() {
     return Season.query().orderBy('year', 'desc')
   }
+
+  listActive() {
+    return Season.query().where('is_active', true)
+  }
 }
