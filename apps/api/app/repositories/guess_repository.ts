@@ -1,5 +1,6 @@
 import { inject } from '@adonisjs/core'
 import { MatchStatus } from '@palpites/shared'
+import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import Guess from '#models/guess'
 import BaseRepository from '#repositories/base_repository'
 
@@ -15,8 +16,8 @@ export default class GuessRepository extends BaseRepository<typeof Guess> {
     return Guess.query().where('match_id', matchId).preload('user')
   }
 
-  listBySeasonAndUser(seasonId: string, userId: string) {
-    return Guess.query()
+  listBySeasonAndUser(seasonId: string, userId: string, trx?: TransactionClientContract) {
+    return Guess.query({ client: trx })
       .where('user_id', userId)
       .whereHas('match', (m) => {
         m.where('status', MatchStatus.FINISHED).whereHas('round', (r) => {

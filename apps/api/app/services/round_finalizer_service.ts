@@ -42,7 +42,7 @@ export default class RoundFinalizerService {
 
       const seasonId = round.seasonId
       for (const userId of affectedUserIds) {
-        const userGuesses = await this.guessRepository.listBySeasonAndUser(seasonId, userId)
+        const userGuesses = await this.guessRepository.listBySeasonAndUser(seasonId, userId, trx)
         const totalPoints = userGuesses.reduce((acc, g) => acc + (g.points ?? 0), 0)
         const exactScoresCount = userGuesses.filter((g) => g.points === 3).length
         await this.scoreRepository.upsert(userId, seasonId, { totalPoints, exactScoresCount }, trx)
