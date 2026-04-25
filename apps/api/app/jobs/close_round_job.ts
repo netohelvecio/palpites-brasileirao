@@ -1,6 +1,7 @@
 import { inject } from '@adonisjs/core'
 import { DateTime } from 'luxon'
 import logger from '@adonisjs/core/services/logger'
+import { RoundStatus } from '@palpites/shared'
 import RoundRepository from '#repositories/round_repository'
 
 export interface CloseRoundReport {
@@ -17,7 +18,7 @@ export default class CloseRoundJob {
     const closedRoundIds: string[] = []
 
     for (const round of rounds) {
-      await this.roundRepository.update(round, { status: 'closed' })
+      await this.roundRepository.update(round, { status: RoundStatus.CLOSED })
       closedRoundIds.push(round.id)
     }
 

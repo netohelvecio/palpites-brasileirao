@@ -1,5 +1,6 @@
 import { inject } from '@adonisjs/core'
 import type { HttpContext } from '@adonisjs/core/http'
+import { MatchStatus } from '@palpites/shared'
 import MatchRepository from '#repositories/match_repository'
 import RoundRepository from '#repositories/round_repository'
 import RefreshMatchService from '#services/refresh_match_service'
@@ -27,7 +28,7 @@ export default class MatchesController {
     if (existing) {
       await this.matchRepository.update(existing, {
         ...payload,
-        status: 'scheduled',
+        status: MatchStatus.SCHEDULED,
         homeScore: null,
         awayScore: null,
       })
@@ -37,7 +38,7 @@ export default class MatchesController {
     const match = await this.matchRepository.create({
       roundId: round.id,
       ...payload,
-      status: 'scheduled',
+      status: MatchStatus.SCHEDULED,
     })
     return response.ok(match)
   }

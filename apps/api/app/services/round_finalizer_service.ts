@@ -1,5 +1,6 @@
 import { inject } from '@adonisjs/core'
 import db from '@adonisjs/lucid/services/db'
+import { MatchStatus, RoundStatus } from '@palpites/shared'
 import { calculatePoints } from '#services/guess_scoring_service'
 import GuessRepository from '#repositories/guess_repository'
 import MatchRepository from '#repositories/match_repository'
@@ -18,7 +19,7 @@ export default class RoundFinalizerService {
   async finalize(roundId: string): Promise<void> {
     const round = await this.roundRepository.findByIdOrFail(roundId)
     const match = await this.matchRepository.findByRoundId(round.id)
-    if (!match || match.status !== 'finished') {
+    if (!match || match.status !== MatchStatus.FINISHED) {
       throw new Error('match não finalizado — não é possível finalizar o round')
     }
     if (match.homeScore === null || match.awayScore === null) {
@@ -47,7 +48,7 @@ export default class RoundFinalizerService {
         await this.scoreRepository.upsert(userId, seasonId, { totalPoints, exactScoresCount }, trx)
       }
 
-      await this.roundRepository.update(round, { status: 'finished' }, trx)
+      await this.roundRepository.update(round, { status: RoundStatus.FINISHED }, trx)
     })
   }
 }

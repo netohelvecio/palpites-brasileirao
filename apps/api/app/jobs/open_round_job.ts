@@ -1,5 +1,6 @@
 import { inject } from '@adonisjs/core'
 import logger from '@adonisjs/core/services/logger'
+import { RoundStatus } from '@palpites/shared'
 import FixturesSyncService, { type SyncReport } from '#services/fixtures_sync_service'
 import RoundRepository from '#repositories/round_repository'
 import SeasonRepository from '#repositories/season_repository'
@@ -36,8 +37,8 @@ export default class OpenRoundJob {
         )
 
         let roundOpened = false
-        if (round && round.status === 'pending' && syncReport.match) {
-          await this.roundRepository.update(round, { status: 'open' })
+        if (round && round.status === RoundStatus.PENDING && syncReport.match) {
+          await this.roundRepository.update(round, { status: RoundStatus.OPEN })
           roundOpened = true
         }
 

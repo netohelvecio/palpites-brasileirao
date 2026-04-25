@@ -1,4 +1,5 @@
 import { inject } from '@adonisjs/core'
+import { MatchStatus } from '@palpites/shared'
 import Guess from '#models/guess'
 import BaseRepository from '#repositories/base_repository'
 
@@ -18,7 +19,7 @@ export default class GuessRepository extends BaseRepository<typeof Guess> {
     return Guess.query()
       .where('user_id', userId)
       .whereHas('match', (m) => {
-        m.where('status', 'finished').whereHas('round', (r) => {
+        m.where('status', MatchStatus.FINISHED).whereHas('round', (r) => {
           r.where('season_id', seasonId)
         })
       })

@@ -1,4 +1,5 @@
 import { inject } from '@adonisjs/core'
+import { MatchStatus } from '@palpites/shared'
 import Match from '#models/match'
 import BaseRepository from '#repositories/base_repository'
 
@@ -12,7 +13,7 @@ export default class MatchRepository extends BaseRepository<typeof Match> {
 
   listActiveNonFinished() {
     return Match.query()
-      .whereNot('status', 'finished')
+      .whereNot('status', MatchStatus.FINISHED)
       .whereHas('round', (r) => {
         r.whereHas('season', (s) => {
           s.where('is_active', true)

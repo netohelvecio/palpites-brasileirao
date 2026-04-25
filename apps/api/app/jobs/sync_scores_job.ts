@@ -1,5 +1,6 @@
 import { inject } from '@adonisjs/core'
 import logger from '@adonisjs/core/services/logger'
+import { MatchStatus, RoundStatus } from '@palpites/shared'
 import MatchRepository from '#repositories/match_repository'
 import RefreshMatchService from '#services/refresh_match_service'
 import RoundFinalizerService from '#services/round_finalizer_service'
@@ -34,7 +35,7 @@ export default class SyncScoresJob {
         let finalized = false
 
         const fresh = await this.matchRepository.findByIdOrFail(match.id)
-        if (fresh.status === 'finished' && match.round.status === 'closed') {
+        if (fresh.status === MatchStatus.FINISHED && match.round.status === RoundStatus.CLOSED) {
           await this.roundFinalizerService.finalize(match.roundId)
           finalized = true
         }

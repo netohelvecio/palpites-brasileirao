@@ -1,5 +1,6 @@
 import { DateTime } from 'luxon'
 import factory from '@adonisjs/lucid/factories'
+import { MatchStatus } from '@palpites/shared'
 import Match from '#models/match'
 import { RoundFactory } from '#factories/round_factory'
 
@@ -10,7 +11,7 @@ export const MatchFactory = factory
       homeTeam: faker.helpers.arrayElement(['Flamengo', 'Palmeiras', 'Corinthians', 'São Paulo']),
       awayTeam: faker.helpers.arrayElement(['Santos', 'Fluminense', 'Grêmio', 'Internacional']),
       kickoffAt: DateTime.now().plus({ days: 3 }),
-      status: 'scheduled' as const,
+      status: MatchStatus.SCHEDULED,
     }
   })
   .relation('round', () => RoundFactory)

@@ -1,5 +1,6 @@
 import { inject } from '@adonisjs/core'
 import { DateTime } from 'luxon'
+import { RoundStatus } from '@palpites/shared'
 import Round from '#models/round'
 import BaseRepository from '#repositories/base_repository'
 
@@ -24,7 +25,7 @@ export default class RoundRepository extends BaseRepository<typeof Round> {
 
   listOpenPastKickoff(date: DateTime) {
     return Round.query()
-      .where('status', 'open')
+      .where('status', RoundStatus.OPEN)
       .whereHas('match', (m) => {
         m.where('kickoff_at', '<=', date.toJSDate())
       })

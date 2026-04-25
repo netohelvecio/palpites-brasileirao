@@ -1,7 +1,7 @@
 import { inject } from '@adonisjs/core'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
-import type { MatchView } from '@palpites/shared'
+import { MatchStatus, RoundStatus, type MatchView } from '@palpites/shared'
 import FootballDataClient from '#integrations/football_data/client'
 import {
   toFixtureCandidate,
@@ -82,7 +82,7 @@ export default class FixturesSyncService {
       const round =
         existingRound ??
         (await this.roundRepository.create(
-          { seasonId, number: currentMatchday, status: 'pending' },
+          { seasonId, number: currentMatchday, status: RoundStatus.PENDING },
           trx
         ))
 
@@ -93,7 +93,7 @@ export default class FixturesSyncService {
           homeTeam: pick.match.homeTeamName,
           awayTeam: pick.match.awayTeamName,
           kickoffAt: DateTime.fromJSDate(pick.match.kickoffAt),
-          status: 'scheduled',
+          status: MatchStatus.SCHEDULED,
         },
         trx
       )
