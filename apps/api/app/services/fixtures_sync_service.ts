@@ -1,4 +1,5 @@
 import { inject } from '@adonisjs/core'
+import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
 import type { MatchView } from '@palpites/shared'
 import FootballDataClient from '#integrations/football_data/client'
@@ -39,24 +40,22 @@ export default class FixturesSyncService {
     const currentMatchday = extractCurrentMatchday(standingsRes)
     const year = extractSeasonYear(standingsRes)
 
-    let round = await this.roundRepository.findBySeasonAndNumber(seasonId, currentMatchday)
-    if (!round) {
-      round = await this.roundRepository.create({
-        seasonId,
-        number: currentMatchday,
-        status: 'pending',
-      })
-    }
+    const existingRound = await this.roundRepository.findBySeasonAndNumber(
+      seasonId,
+      currentMatchday
+    )
 
-    const existing = await this.matchRepository.findByRoundId(round.id)
-    if (existing) {
-      return {
-        seasonId,
-        currentMatchday,
-        created: false,
-        skipped: true,
-        reason: 'round já possui match',
-        match: presentMatch(existing),
+    if (existingRound) {
+      const existingMatch = await this.matchRepository.findByRoundId(existingRound.id)
+      if (existingMatch) {
+        return {
+          seasonId,
+          currentMatchday,
+          created: false,
+          skipped: true,
+          reason: 'round já possui match',
+          match: presentMatch(existingMatch),
+        }
       }
     }
 
@@ -79,13 +78,25 @@ export default class FixturesSyncService {
       }
     }
 
-    const created = await this.matchRepository.create({
-      roundId: round.id,
-      externalId: pick.match.externalId,
-      homeTeam: pick.match.homeTeamName,
-      awayTeam: pick.match.awayTeamName,
-      kickoffAt: DateTime.fromJSDate(pick.match.kickoffAt),
-      status: 'scheduled',
+    const created = await db.transaction(async (trx) => {
+      const round =
+        existingRound ??
+        (await this.roundRepository.create(
+          { seasonId, number: currentMatchday, status: 'pending' },
+          trx
+        ))
+
+      return this.matchRepository.create(
+        {
+          roundId: round.id,
+          externalId: pick.match.externalId,
+          homeTeam: pick.match.homeTeamName,
+          awayTeam: pick.match.awayTeamName,
+          kickoffAt: DateTime.fromJSDate(pick.match.kickoffAt),
+          status: 'scheduled',
+        },
+        trx
+      )
     })
 
     return {

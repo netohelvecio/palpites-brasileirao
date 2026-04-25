@@ -35,8 +35,7 @@ export default class RoundFinalizerService {
           { guessHome: guess.homeScore, guessAway: guess.awayScore },
           final
         )
-        guess.useTransaction(trx)
-        await this.guessRepository.update(guess, { points })
+        await this.guessRepository.update(guess, { points }, trx)
         affectedUserIds.add(guess.userId)
       }
 
@@ -48,8 +47,7 @@ export default class RoundFinalizerService {
         await this.scoreRepository.upsert(userId, seasonId, { totalPoints, exactScoresCount }, trx)
       }
 
-      round.useTransaction(trx)
-      await this.roundRepository.update(round, { status: 'finished' })
+      await this.roundRepository.update(round, { status: 'finished' }, trx)
     })
   }
 }
