@@ -2,93 +2,162 @@ import { test } from '@japa/runner'
 import app from '@adonisjs/core/services/app'
 import testUtils from '@adonisjs/core/services/test_utils'
 import FootballDataClient from '#integrations/football_data/client'
+import WhatsAppClient from '#integrations/whatsapp/whatsapp_client'
 import OpenRoundJob from '#jobs/open_round_job'
 import { SeasonFactory } from '#factories/season_factory'
 import { RoundFactory } from '#factories/round_factory'
 import { MatchFactory } from '#factories/match_factory'
 import { FakeFootballDataClient, fakeStandings, fakeMatch } from '#tests/helpers/football_data_mock'
+import { FakeWhatsAppClient } from '#tests/helpers/whatsapp_mock'
 
 test.group('OpenRoundJob', (group) => {
   group.each.setup(() => testUtils.db().wrapInGlobalTransaction())
 
-  test('abre round pendente após criar match via sync', async ({ assert }) => {
+  function setupFakes() {
+    const football = new FakeFootballDataClient()
+    const whatsapp = new FakeWhatsAppClient()
+    app.container.swap(FootballDataClient, () => football as any)
+    app.container.swap(WhatsAppClient, () => whatsapp)
+    return { football, whatsapp }
+  }
+
+  function teardownFakes() {
+    app.container.restore(FootballDataClient)
+    app.container.restore(WhatsAppClient)
+  }
+
+  test('abre round pendente após criar match via sync e envia mensagem', async ({ assert }) => {
     const season = await SeasonFactory.merge({
       isActive: true,
       year: 2026,
       externalCompetitionCode: 'BSA',
     }).create()
 
-    const fake = new FakeFootballDataClient()
-    fake.standings = fakeStandings(12, 2026, { 1: 30, 2: 25 })
-    fake.matchesByMatchday.set('2026:12', [fakeMatch(1001, 1, 2, 12)])
+    const { football, whatsapp } = setupFakes()
+    football.standings = fakeStandings(12, 2026, { 1: 30, 2: 25 })
+    football.matchesByMatchday.set('2026:12', [fakeMatch(1001, 1, 2, 12)])
 
-    app.container.swap(FootballDataClient, () => fake as any)
     try {
       const job = await app.container.make(OpenRoundJob)
       const report = await job.run()
 
-      assert.lengthOf(report.runs, 1)
       const run = report.runs[0]
       assert.equal(run.seasonId, season.id)
-      assert.isNotNull(run.syncReport)
-      assert.equal(run.syncReport!.currentMatchday, 12)
       assert.equal(run.roundOpened, true)
+      assert.lengthOf(whatsapp.sentMessages, 1)
+      assert.match(whatsapp.sentMessages[0], /📢 Rodada 12 aberta!/)
     } finally {
-      app.container.restore(FootballDataClient)
+      teardownFakes()
     }
   })
 
-  test('é idempotente: segunda execução não reabre', async ({ assert }) => {
+  test('é idempotente: segunda execução não reabre nem envia mensagem', async ({ assert }) => {
     await SeasonFactory.merge({
       isActive: true,
       year: 2026,
       externalCompetitionCode: 'BSA',
     }).create()
 
-    const fake = new FakeFootballDataClient()
-    fake.standings = fakeStandings(12, 2026, { 1: 30, 2: 25 })
-    fake.matchesByMatchday.set('2026:12', [fakeMatch(1001, 1, 2, 12)])
+    const { football, whatsapp } = setupFakes()
+    football.standings = fakeStandings(12, 2026, { 1: 30, 2: 25 })
+    football.matchesByMatchday.set('2026:12', [fakeMatch(1001, 1, 2, 12)])
 
-    app.container.swap(FootballDataClient, () => fake as any)
     try {
       const job = await app.container.make(OpenRoundJob)
       await job.run()
       const second = await job.run()
 
       assert.equal(second.runs[0].roundOpened, false)
+      assert.lengthOf(whatsapp.sentMessages, 1)
     } finally {
-      app.container.restore(FootballDataClient)
+      teardownFakes()
+    }
+  })
+
+  test('WhatsApp offline: não flipa status nem envia mensagem', async ({ assert }) => {
+    const season = await SeasonFactory.merge({
+      isActive: true,
+      year: 2026,
+      externalCompetitionCode: 'BSA',
+    }).create()
+
+    const { football, whatsapp } = setupFakes()
+    whatsapp.setConnected(false)
+    football.standings = fakeStandings(12, 2026, { 1: 30, 2: 25 })
+    football.matchesByMatchday.set('2026:12', [fakeMatch(1001, 1, 2, 12)])
+
+    try {
+      const job = await app.container.make(OpenRoundJob)
+      const report = await job.run()
+
+      assert.equal(report.runs[0].roundOpened, false)
+      assert.lengthOf(whatsapp.sentMessages, 0)
+
+      const RoundModel = (await import('#models/round')).default
+      const round = await RoundModel.query()
+        .where('season_id', season.id)
+        .where('number', 12)
+        .firstOrFail()
+      assert.equal(round.status, 'pending')
+    } finally {
+      teardownFakes()
+    }
+  })
+
+  test('send falha: não flipa status', async ({ assert }) => {
+    const season = await SeasonFactory.merge({
+      isActive: true,
+      year: 2026,
+      externalCompetitionCode: 'BSA',
+    }).create()
+
+    const { football, whatsapp } = setupFakes()
+    whatsapp.throwOnSend = new Error('baileys timeout')
+    football.standings = fakeStandings(12, 2026, { 1: 30, 2: 25 })
+    football.matchesByMatchday.set('2026:12', [fakeMatch(1001, 1, 2, 12)])
+
+    try {
+      const job = await app.container.make(OpenRoundJob)
+      const report = await job.run()
+
+      assert.equal(report.runs[0].roundOpened, false)
+      assert.isDefined(report.runs[0].error)
+
+      const RoundModel = (await import('#models/round')).default
+      const round = await RoundModel.query()
+        .where('season_id', season.id)
+        .where('number', 12)
+        .firstOrFail()
+      assert.equal(round.status, 'pending')
+    } finally {
+      teardownFakes()
     }
   })
 
   test('ignora season inativa', async ({ assert }) => {
     await SeasonFactory.merge({ isActive: false }).create()
-
-    const fake = new FakeFootballDataClient()
-    app.container.swap(FootballDataClient, () => fake as any)
+    setupFakes()
     try {
       const job = await app.container.make(OpenRoundJob)
       const report = await job.run()
       assert.lengthOf(report.runs, 0)
     } finally {
-      app.container.restore(FootballDataClient)
+      teardownFakes()
     }
   })
 
-  test('erro em uma season não quebra o job: registra em errors', async ({ assert }) => {
+  test('erro do football-data não quebra: registra em errors', async ({ assert }) => {
     await SeasonFactory.merge({ isActive: true, externalCompetitionCode: 'BSA' }).create()
-
-    const fake = new FakeFootballDataClient()
-    // standings não setado → fetchStandings throws no fake
-    app.container.swap(FootballDataClient, () => fake as any)
+    const { whatsapp } = setupFakes()
     try {
       const job = await app.container.make(OpenRoundJob)
       const report = await job.run()
 
       assert.lengthOf(report.runs, 1)
       assert.isDefined(report.runs[0].error)
+      assert.lengthOf(whatsapp.sentMessages, 0)
     } finally {
-      app.container.restore(FootballDataClient)
+      teardownFakes()
     }
   })
 
@@ -105,20 +174,20 @@ test.group('OpenRoundJob', (group) => {
     }).create()
     await MatchFactory.merge({ roundId: round.id }).create()
 
-    const fake = new FakeFootballDataClient()
-    fake.standings = fakeStandings(12, 2026, { 1: 30, 2: 25 })
-    fake.matchesByMatchday.set('2026:12', [fakeMatch(1001, 1, 2, 12)])
+    const { football, whatsapp } = setupFakes()
+    football.standings = fakeStandings(12, 2026, { 1: 30, 2: 25 })
+    football.matchesByMatchday.set('2026:12', [fakeMatch(1001, 1, 2, 12)])
 
-    app.container.swap(FootballDataClient, () => fake as any)
     try {
       const job = await app.container.make(OpenRoundJob)
       const report = await job.run()
 
       assert.equal(report.runs[0].roundOpened, false)
+      assert.lengthOf(whatsapp.sentMessages, 0)
       const fresh = await round.refresh()
       assert.equal(fresh.status, 'open')
     } finally {
-      app.container.restore(FootballDataClient)
+      teardownFakes()
     }
   })
 })

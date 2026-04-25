@@ -4,6 +4,8 @@ import { RoundStatus } from '@palpites/shared'
 import FixturesSyncService, { type SyncReport } from '#services/fixtures_sync_service'
 import RoundRepository from '#repositories/round_repository'
 import SeasonRepository from '#repositories/season_repository'
+import MatchRepository from '#repositories/match_repository'
+import WhatsAppNotifier from '#services/whatsapp_notifier'
 
 export interface OpenRoundRun {
   seasonId: string
@@ -21,7 +23,9 @@ export default class OpenRoundJob {
   constructor(
     private seasonRepository: SeasonRepository,
     private roundRepository: RoundRepository,
-    private fixturesSyncService: FixturesSyncService
+    private matchRepository: MatchRepository,
+    private fixturesSyncService: FixturesSyncService,
+    private notifier: WhatsAppNotifier
   ) {}
 
   async run(): Promise<OpenRoundReport> {
@@ -38,8 +42,25 @@ export default class OpenRoundJob {
 
         let roundOpened = false
         if (round && round.status === RoundStatus.PENDING && syncReport.match) {
-          await this.roundRepository.update(round, { status: RoundStatus.OPEN })
-          roundOpened = true
+          if (!this.notifier.isReady()) {
+            logger.warn(
+              { seasonId: season.id, roundId: round.id },
+              'OpenRoundJob: WhatsApp offline — skipping flip pending→open'
+            )
+          } else {
+            const match = await this.matchRepository.findByRoundId(round.id)
+            if (!match) {
+              throw new Error('round.match esperado após sync, mas não encontrado')
+            }
+            await this.notifier.notifyRoundOpened({
+              roundNumber: round.number,
+              homeTeam: match.homeTeam,
+              awayTeam: match.awayTeam,
+              kickoffAt: match.kickoffAt,
+            })
+            await this.roundRepository.update(round, { status: RoundStatus.OPEN })
+            roundOpened = true
+          }
         }
 
         runs.push({ seasonId: season.id, syncReport, roundOpened })

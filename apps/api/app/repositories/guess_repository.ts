@@ -16,6 +16,15 @@ export default class GuessRepository extends BaseRepository<typeof Guess> {
     return Guess.query().where('match_id', matchId).preload('user')
   }
 
+  listByRound(roundId: string) {
+    return Guess.query()
+      .whereHas('match', (m) => {
+        m.where('round_id', roundId)
+      })
+      .preload('user')
+      .preload('match')
+  }
+
   listBySeasonAndUser(seasonId: string, userId: string, trx?: TransactionClientContract) {
     return Guess.query({ client: trx })
       .where('user_id', userId)
