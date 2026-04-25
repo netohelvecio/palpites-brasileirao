@@ -97,4 +97,138 @@ test.group('RoundFinalizerService', (group) => {
     const finalizer = await app.container.make(RoundFinalizerService)
     await assert.rejects(() => finalizer.finalize(round.id), /match não finalizado/i)
   })
+
+  test('previewFinalize: retorna roundScores ordenados por pontos desc', async ({ assert }) => {
+    const season = await SeasonFactory.create()
+    const round = await RoundFactory.merge({
+      seasonId: season.id,
+      number: 7,
+      status: 'closed',
+    }).create()
+    const match = await MatchFactory.merge({
+      roundId: round.id,
+      status: 'finished',
+      homeScore: 2,
+      awayScore: 1,
+    }).create()
+
+    const [exactUser, winnerUser, wrongUser] = await UserFactory.createMany(3)
+    await Guess.createMany([
+      { matchId: match.id, userId: exactUser.id, homeScore: 2, awayScore: 1 },
+      { matchId: match.id, userId: winnerUser.id, homeScore: 3, awayScore: 0 },
+      { matchId: match.id, userId: wrongUser.id, homeScore: 0, awayScore: 2 },
+    ])
+
+    const finalizer = await app.container.make(RoundFinalizerService)
+    const preview = await finalizer.previewFinalize(round.id)
+
+    assert.lengthOf(preview.roundScores, 3)
+    assert.equal(preview.roundScores[0].points, 3)
+    assert.equal(preview.roundScores[0].userId, exactUser.id)
+    assert.equal(preview.roundScores[1].points, 1)
+    assert.equal(preview.roundScores[2].points, 0)
+  })
+
+  test('previewFinalize: seasonRanking inclui delta dessa rodada', async ({ assert }) => {
+    const season = await SeasonFactory.create()
+    const round = await RoundFactory.merge({
+      seasonId: season.id,
+      number: 5,
+      status: 'closed',
+    }).create()
+    const match = await MatchFactory.merge({
+      roundId: round.id,
+      status: 'finished',
+      homeScore: 1,
+      awayScore: 0,
+    }).create()
+    const user = await UserFactory.create()
+    await Guess.create({
+      matchId: match.id,
+      userId: user.id,
+      homeScore: 1,
+      awayScore: 0,
+    })
+
+    await Score.create({
+      userId: user.id,
+      seasonId: season.id,
+      totalPoints: 5,
+      exactScoresCount: 1,
+    } as any)
+
+    const finalizer = await app.container.make(RoundFinalizerService)
+    const preview = await finalizer.previewFinalize(round.id)
+
+    assert.lengthOf(preview.seasonRanking, 1)
+    assert.equal(preview.seasonRanking[0].totalPoints, 8)
+    assert.equal(preview.seasonRanking[0].exactScoresCount, 2)
+  })
+
+  test('previewFinalize: NÃO persiste — DB intacto após chamada', async ({ assert }) => {
+    const season = await SeasonFactory.create()
+    const round = await RoundFactory.merge({
+      seasonId: season.id,
+      status: 'closed',
+    }).create()
+    const match = await MatchFactory.merge({
+      roundId: round.id,
+      status: 'finished',
+      homeScore: 1,
+      awayScore: 1,
+    }).create()
+    const user = await UserFactory.create()
+    await Guess.create({
+      matchId: match.id,
+      userId: user.id,
+      homeScore: 1,
+      awayScore: 1,
+    })
+
+    const finalizer = await app.container.make(RoundFinalizerService)
+    await finalizer.previewFinalize(round.id)
+
+    const freshRound = await round.refresh()
+    assert.equal(freshRound.status, 'closed')
+
+    const guesses = await Guess.query().where('match_id', match.id)
+    assert.isNull(guesses[0].points)
+
+    const scoreCount = await Score.query().count('* as total')
+    assert.equal(Number(scoreCount[0].$extras.total), 0)
+  })
+
+  test('previewFinalize === finalize (consistência): preview prediz o que finalize persiste', async ({
+    assert,
+  }) => {
+    const season = await SeasonFactory.create()
+    const round = await RoundFactory.merge({
+      seasonId: season.id,
+      status: 'closed',
+    }).create()
+    const match = await MatchFactory.merge({
+      roundId: round.id,
+      status: 'finished',
+      homeScore: 2,
+      awayScore: 1,
+    }).create()
+    const [u1, u2] = await UserFactory.createMany(2)
+    await Guess.createMany([
+      { matchId: match.id, userId: u1.id, homeScore: 2, awayScore: 1 },
+      { matchId: match.id, userId: u2.id, homeScore: 1, awayScore: 0 },
+    ])
+
+    const finalizer = await app.container.make(RoundFinalizerService)
+    const preview = await finalizer.previewFinalize(round.id)
+    await finalizer.finalize(round.id)
+
+    const scores = await Score.query().where('season_id', season.id)
+
+    for (const previewEntry of preview.seasonRanking) {
+      const persisted = scores.find((s) => s.userId === previewEntry.userId)
+      assert.isNotNull(persisted)
+      assert.equal(persisted!.totalPoints, previewEntry.totalPoints)
+      assert.equal(persisted!.exactScoresCount, previewEntry.exactScoresCount)
+    }
+  })
 })

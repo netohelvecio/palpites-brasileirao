@@ -4,6 +4,7 @@ import { MatchStatus, RoundStatus } from '@palpites/shared'
 import MatchRepository from '#repositories/match_repository'
 import RefreshMatchService from '#services/refresh_match_service'
 import RoundFinalizerService from '#services/round_finalizer_service'
+import WhatsAppNotifier from '#services/whatsapp_notifier'
 
 export interface SyncScoresRun {
   matchId: string
@@ -22,7 +23,8 @@ export default class SyncScoresJob {
   constructor(
     private matchRepository: MatchRepository,
     private refreshMatchService: RefreshMatchService,
-    private roundFinalizerService: RoundFinalizerService
+    private roundFinalizerService: RoundFinalizerService,
+    private notifier: WhatsAppNotifier
   ) {}
 
   async run(): Promise<SyncScoresReport> {
@@ -30,25 +32,16 @@ export default class SyncScoresJob {
     const runs: SyncScoresRun[] = []
 
     for (const match of matches) {
+      let refreshed = false
+      let finalized = false
+      let error: string | undefined
+
       try {
         const report = await this.refreshMatchService.refresh(match.id)
-        let finalized = false
-
-        const fresh = await this.matchRepository.findByIdOrFail(match.id)
-        if (fresh.status === MatchStatus.FINISHED && match.round.status === RoundStatus.CLOSED) {
-          await this.roundFinalizerService.finalize(match.roundId)
-          finalized = true
-        }
-
-        runs.push({
-          matchId: match.id,
-          roundId: match.roundId,
-          refreshed: report.updated,
-          finalized,
-        })
+        refreshed = report.updated
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err)
-        logger.error({ matchId: match.id, err: msg }, 'SyncScoresJob: falha em match')
+        logger.error({ matchId: match.id, err: msg }, 'SyncScoresJob: falha em refresh')
         runs.push({
           matchId: match.id,
           roundId: match.roundId,
@@ -56,7 +49,39 @@ export default class SyncScoresJob {
           finalized: false,
           error: msg,
         })
+        continue
       }
+
+      try {
+        const fresh = await this.matchRepository.findByIdOrFail(match.id)
+        if (fresh.status === MatchStatus.FINISHED && match.round.status === RoundStatus.CLOSED) {
+          if (!this.notifier.isReady()) {
+            logger.warn(
+              { matchId: match.id, roundId: match.roundId },
+              'SyncScoresJob: WhatsApp offline — skipping finalize'
+            )
+          } else {
+            const preview = await this.roundFinalizerService.previewFinalize(match.roundId)
+            await this.notifier.notifyMatchFinished({
+              roundNumber: match.round.number,
+              homeTeam: fresh.homeTeam,
+              awayTeam: fresh.awayTeam,
+              finalHome: fresh.homeScore!,
+              finalAway: fresh.awayScore!,
+              roundScores: preview.roundScores,
+              seasonRanking: preview.seasonRanking,
+            })
+            await this.roundFinalizerService.finalize(match.roundId)
+            finalized = true
+          }
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
+        logger.error({ matchId: match.id, err: msg }, 'SyncScoresJob: falha em finalize')
+        error = msg
+      }
+
+      runs.push({ matchId: match.id, roundId: match.roundId, refreshed, finalized, error })
     }
 
     logger.info({ runs }, 'SyncScoresJob: finished')
