@@ -12,10 +12,4 @@ test.group('Health', () => {
     const res = await client.get('/health')
     res.assertStatus(200)
   })
-
-  test('GET /whatsapp/status retorna stub', async ({ client, assert }) => {
-    const res = await client.get('/whatsapp/status')
-    res.assertStatus(200)
-    assert.equal(res.body().status, 'not-implemented')
-  })
 })

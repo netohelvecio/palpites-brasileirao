@@ -30,4 +30,9 @@ export default await Env.create(new URL('../', import.meta.url), {
   // Football-Data.org
   FOOTBALL_DATA_BASE_URL: Env.schema.string({ format: 'url', tld: false }),
   FOOTBALL_DATA_TOKEN: Env.schema.string.optional(),
+
+  // WhatsApp (Baileys)
+  WHATSAPP_MODE: Env.schema.enum(['real', 'stub', 'disabled'] as const),
+  WHATSAPP_GROUP_JID: Env.schema.string.optional(),
+  WHATSAPP_AUTH_PATH: Env.schema.string(),
 })
