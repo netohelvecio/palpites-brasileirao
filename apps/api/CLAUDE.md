@@ -16,8 +16,10 @@ app/
   validators/      # VineJS validators (createUserValidator, etc.)
   middleware/      # admin_auth_middleware (Bearer admin), container_bindings_middleware, force_json_response_middleware
   integrations/    # football_data/ (client + mappers + types); whatsapp/ virá via Baileys no plano 4
-  jobs/            # [futuro] open_round_job, close_round_job, sync_scores_job
+  jobs/            # open_round_job, close_round_job, sync_scores_job — orchestrators chamados pelo scheduler e pelos ace commands
   exceptions/      # handler global
+commands/
+  jobs/            # ace commands p/ disparar jobs manualmente em dev (jobs:run-open-round, run-close-round, run-sync-scores, run-finalize-round)
 config/
   database.ts      # conexão pg — DB_* vars obrigatórias
   app.ts, cors.ts, bodyparser.ts, hash.ts, logger.ts, encryption.ts
@@ -39,7 +41,7 @@ tests/
 ## Convenções locais
 
 - **ESM obrigatório**: arquivos em TS, imports com `.js` nos caminhos relativos (`import Foo from './foo.js'`).
-- **Subpath aliases**: `#controllers/*`, `#models/*`, `#repositories/*`, `#presenters/*`, `#services/*`, `#validators/*`, `#middleware/*`, `#database/*`, `#factories/*`, `#start/*`, `#config/*`, `#tests/*` — configurados em `package.json → imports`.
+- **Subpath aliases**: `#controllers/*`, `#models/*`, `#repositories/*`, `#presenters/*`, `#services/*`, `#validators/*`, `#middleware/*`, `#database/*`, `#factories/*`, `#start/*`, `#config/*`, `#tests/*`, `#integrations/*`, `#jobs/*` — configurados em `package.json → imports`.
 - **Controllers finos**: só lidam com HTTP (validação + resposta). Delegam dados ao repository e lógica pura ao service.
 - **Repositories com DI**: toda query Lucid fica em `app/repositories/`. Controllers recebem via `@inject()` no construtor. Nada de `User.query()` direto no controller.
 - **`BaseRepository<Model>`** fornece `findById`, `findByIdOrFail`, `create`, `update`. Cada repo específico só adiciona métodos próprios (`list()` com ordenação da entidade, `findByXYZ`, etc.).
@@ -47,6 +49,9 @@ tests/
 - **Services puros** (sem DB) são preferidos sempre que possível; testes unitários são rápidos.
 - **Prefira `@beforeCreate`/`@beforeFind`/`@beforeFetch` hooks** em vez de lógica espalhada.
 - **Migrations são imutáveis após aplicadas**: para mudar schema, crie uma nova migration.
+- **Scheduler de jobs**: cron jobs em `start/scheduler.ts`, registrado em `adonisrc.ts → preloads` com `environment: ['web']` (não carrega em test/console/repl). Cada job em `app/jobs/` é resolvido via `app.container.make(...)`. Para disparo manual em dev, use os ace commands `node ace jobs:run-*` (em `commands/jobs/`, sempre com `static options = { startApp: true }`).
+- **Transações Lucid**: `BaseRepository.create(payload, trx?)` e `update(row, payload, trx?)` aceitam um `TransactionClientContract` opcional. Use `db.transaction(async (trx) => {...})` (de `@adonisjs/lucid/services/db`) e propague `trx` em **todas** as operações dentro do bloco — incluindo queries de leitura: `Model.query({ client: trx })` ou repo helpers que aceitem `trx`. Sem isso, a query vai pra outra conexão e não vê writes uncommitted.
+- **Status enums em produção**: use as constantes de `@palpites/shared` (`RoundStatus.OPEN`, `MatchStatus.FINISHED`) — não strings hardcoded — em services, jobs, controllers, repositories e factories. **Tests** podem manter literais (`'open'`, `'finished'`): funcionam como contrato/documentação do shape e quebram explicitamente se alguém renomear o enum value.
 
 ## Padrões de model
 
@@ -126,6 +131,8 @@ Bootstrap roda `testUtils.db().migrate()` só em suites `functional`/`e2e` (unit
 **Mockar clients de integração externa:** `app.container.swap(Client, () => fake as any)` no setup + `app.container.restore(Client)` em `finally`. Template: `tests/helpers/football_data_mock.ts` (`FakeFootballDataClient`). Uso típico em `tests/functional/seasons.spec.ts` e `matches.spec.ts`.
 
 **Gotcha:** se testes falharem com `ECONNREFUSED 127.0.0.1:5433`, o container `palpites_postgres_test` caiu. `docker compose up -d` da raiz sobe de novo.
+
+**Gotcha de transaction nos tests:** `wrapInGlobalTransaction` força todas as queries (mesmo sem `client: trx` explícito) a passarem pela mesma conexão da trx global. Isso **esconde** bugs de query dentro de `db.transaction(...)` que esquecem de propagar `trx` — em produção essas queries vão pra conexão separada e não enxergam writes uncommitted. Quando refactor mexer com transação, valide manualmente fora do test (REPL ou ace command com banco real).
 
 **REPL via stdin gotcha:** `node ace repl` alimentado por pipe fecha stdin rápido demais pro `await` top-level completar em scripts multiline. Use um IIFE async em uma única linha: `printf '(async () => { const m = await import("..."); ... })()\n' | node ace repl`.
 

@@ -23,11 +23,11 @@ A cada rodada, o jogo "oficial do bolão" é o confronto com maior soma de ponto
 - **Japa** para testes
 - **pnpm workspaces** + **Turborepo**
 
-### Integrações previstas
+### Integrações
 
-- [football-data.org](https://www.football-data.org/) — dados de jogos, rodadas e tabela (competition `BSA`)
-- [Baileys](https://github.com/WhiskeySockets/Baileys) — integração com WhatsApp (chip dedicado)
-- [node-cron](https://github.com/node-cron/node-cron) — agendamento de jobs (abrir/fechar rodada, sincronizar placares)
+- [football-data.org](https://www.football-data.org/) — dados de jogos, rodadas e tabela (competition `BSA`) — **integrado**
+- [node-cron](https://github.com/node-cron/node-cron) — scheduler de jobs (abertura, fechamento, sync de placares) — **integrado**
+- [Baileys](https://github.com/WhiskeySockets/Baileys) — integração com WhatsApp (chip dedicado) — pendente (Fase 4)
 
 ## Estrutura do monorepo
 
@@ -119,7 +119,7 @@ Entidades principais: `users`, `seasons`, `rounds`, `matches`, `guesses`, `score
 |---|---|---|
 | 1 — Foundation + Core Domain | ✅ concluída | Monorepo, schema, models, serviços, endpoints admin |
 | 2 — football-data.org | ✅ concluída | Sync da rodada atual, picker do jogo em destaque, refresh de placares |
-| 3 — Scheduler | pendente | Jobs recorrentes (abrir/fechar rodada, sincronizar placares) |
+| 3 — Scheduler | ✅ concluída | Jobs recorrentes via node-cron: abertura (30min), fechamento (5min), sync de placares + finalização (10min) |
 | 4 — WhatsApp | pendente | Integração Baileys, parser de palpites, envio de ranking |
 
 ## Licença

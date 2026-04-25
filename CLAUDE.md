@@ -103,7 +103,7 @@ pnpm --filter @palpites/shared lint
 |---|---|---|
 | Plano 1 (1.1–1.8) | ✅ concluído | Foundation + Core Domain — monorepo, schema, models, serviços (betting_policy, score_parser, scoring, ranking), endpoints admin completos |
 | Plano 2 (2.0–2.4) | ✅ concluído | football-data.org integration — cleanup + client axios, featured match picker (puro), current-matchday sync (lazy round creation), refresh score. Planos em `docs/superpowers/plans/2026-04-24-plan-2.*.md` (+ `2026-04-23-plan-2.2-featured-match-picker.md`) |
-| Plano 3 | pendente | Scheduler + jobs (open/close/sync) — ainda sem WhatsApp |
+| Plano 3 (3.1–3.3) | ✅ concluído | Scheduler (node-cron) + 3 jobs: OpenRoundJob (30min), CloseRoundJob (5min), SyncScoresJob (10min) com `RoundFinalizerService` transacional. Planos em `docs/superpowers/plans/2026-04-24-plan-3.*.md` |
 | Plano 4 | pendente | Baileys + message handler/sender — substitui logs por mensagens reais |
 
 ## Fontes de verdade
