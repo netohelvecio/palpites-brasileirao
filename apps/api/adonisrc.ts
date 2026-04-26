@@ -68,6 +68,10 @@ export default defineConfig({
       file: () => import('#start/scheduler'),
       environment: ['web'],
     },
+    {
+      file: () => import('#start/whatsapp'),
+      environment: ['web'],
+    },
   ],
 
   /*

@@ -15,7 +15,8 @@ export default class WhatsAppProvider {
       }
 
       if (mode === 'real') {
-        throw new Error('WHATSAPP_MODE=real ainda não suportado — implementação chega no plano 4.5')
+        const { default: BaileysClient } = await import('#integrations/whatsapp/baileys_client')
+        return new BaileysClient()
       }
 
       const { default: DisabledClient } = await import('#integrations/whatsapp/disabled_client')

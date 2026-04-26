@@ -28,3 +28,6 @@ yarn-error.log
 
 # Platform specific
 .DS_Store
+
+# WhatsApp session (Baileys auth state)
+storage/
