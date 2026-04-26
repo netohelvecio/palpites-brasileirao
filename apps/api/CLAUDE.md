@@ -49,7 +49,8 @@ tests/
 - **Services puros** (sem DB) são preferidos sempre que possível; testes unitários são rápidos.
 - **Prefira `@beforeCreate`/`@beforeFind`/`@beforeFetch` hooks** em vez de lógica espalhada.
 - **Migrations são imutáveis após aplicadas**: para mudar schema, crie uma nova migration.
-- **Scheduler de jobs**: cron jobs em `start/scheduler.ts`, registrado em `adonisrc.ts → preloads` com `environment: ['web']` (não carrega em test/console/repl). Cada job em `app/jobs/` é resolvido via `app.container.make(...)`. Para disparo manual em dev, use os ace commands `node ace jobs:run-*` (em `commands/jobs/`, sempre com `static options = { startApp: true }`).
+- **Scheduler de jobs**: cron jobs em `start/scheduler.ts`, registrado em `adonisrc.ts → preloads` com `environment: ['web']` (não carrega em test/console/repl). Cada job em `app/jobs/` é resolvido via `app.container.make(...)`. Para disparo manual em dev, use os ace commands `node ace jobs:run-*` (em `commands/jobs/`, sempre com `static options = { startApp: true }`). Os `run-*` que enviam WhatsApp usam `withWhatsAppConnection` para conectar Baileys (preload web-only não dispara em ace) — **pare o `pnpm dev` antes** (auth multi-file não suporta duas sessões simultâneas).
+- **WhatsApp**: integração via Baileys em `app/integrations/whatsapp/` (port `WhatsAppClient` + impls `BaileysClient`/`StubClient`/`DisabledClient`, escolhidas no `whatsapp_provider` por `WHATSAPP_MODE`). Orquestração de mensagens em `app/services/whatsapp_notifier.ts`. Jobs/services chamam `notifier.isReady()` antes de mudar status (gate); offline → cron retenta. `WHATSAPP_GROUP_JID` é validado em `sendToGroup`, não em `connect` (chicken-and-egg com `whatsapp:list-groups`).
 - **Transações Lucid**: `BaseRepository.create(payload, trx?)` e `update(row, payload, trx?)` aceitam um `TransactionClientContract` opcional. Use `db.transaction(async (trx) => {...})` (de `@adonisjs/lucid/services/db`) e propague `trx` em **todas** as operações dentro do bloco — incluindo queries de leitura: `Model.query({ client: trx })` ou repo helpers que aceitem `trx`. Sem isso, a query vai pra outra conexão e não vê writes uncommitted.
 - **Status enums em produção**: use as constantes de `@palpites/shared` (`RoundStatus.OPEN`, `MatchStatus.FINISHED`) — não strings hardcoded — em services, jobs, controllers, repositories e factories. **Tests** podem manter literais (`'open'`, `'finished'`): funcionam como contrato/documentação do shape e quebram explicitamente se alguém renomear o enum value.
 
@@ -98,6 +99,7 @@ Todas validadas em `start/env.ts`. Nunca acesse `process.env` direto.
 - `ADMIN_API_TOKEN` — bearer token único usado pelo `admin_auth_middleware`
 - `APP_KEY`, `APP_URL`, `PORT`, `HOST`, `NODE_ENV`, `LOG_LEVEL`, `TZ`
 - `FOOTBALL_DATA_BASE_URL`, `FOOTBALL_DATA_TOKEN` — integração football-data.org (token opcional; tests usam mock via `container.swap`)
+- `WHATSAPP_MODE` (`real|stub|disabled`, default `disabled`), `WHATSAPP_GROUP_JID` (`*@g.us`, obrigatório só em modo real), `WHATSAPP_AUTH_PATH` (default `./storage/whatsapp-auth`, gitignored)
 - **Não usar** `SESSION_*` (sessões foram removidas)
 
 `.env.test` aponta pra Postgres de teste (porta 5433, DB `palpites_test`).
@@ -147,3 +149,4 @@ Bootstrap roda `testUtils.db().migrate()` só em suites `functional`/`e2e` (unit
 - **Não gerar migrations com timestamp automático** (`node ace make:migration`) — convenção **nossa** é usar prefixo numérico manual (`0007_`, `0008_`...) pra manter ordem estável e legível. O Adonis aceita os dois formatos.
 - **Não consultar `process.env` fora de `start/env.ts`** — sempre via `env.get('VAR')`.
 - **Não editar `database/schema.ts`** — é auto-gerado.
+- **Baileys gotchas**: usar versão estável `6.7.x` (não `7.0.0-rc.*`); `makeWASocket` precisa de `browser: Browsers.macOS('Desktop')` + `version: await fetchLatestBaileysVersion()` para evitar handshake 405; logger precisa de método `child()` (interface pino — usar logger silent inline).

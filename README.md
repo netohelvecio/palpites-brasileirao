@@ -27,7 +27,7 @@ A cada rodada, o jogo "oficial do bolão" é o confronto com maior soma de ponto
 
 - [football-data.org](https://www.football-data.org/) — dados de jogos, rodadas e tabela (competition `BSA`) — **integrado**
 - [node-cron](https://github.com/node-cron/node-cron) — scheduler de jobs (abertura, fechamento, sync de placares) — **integrado**
-- [Baileys](https://github.com/WhiskeySockets/Baileys) — integração com WhatsApp (chip dedicado) — pendente (Fase 4)
+- [Baileys](https://github.com/WhiskeySockets/Baileys) — integração com WhatsApp (chip dedicado) — **outbound integrado**; inbound (recebimento de palpites) pendente (Fase 5)
 
 ## Estrutura do monorepo
 
@@ -60,6 +60,7 @@ docker compose up -d              # Postgres dev (5432) + test (5433)
 cp apps/api/.env.example apps/api/.env
 # edite o .env e defina APP_KEY, DB_* e ADMIN_API_TOKEN
 # opcional: FOOTBALL_DATA_TOKEN pra chamadas reais ao provider (https://www.football-data.org/client/register)
+# opcional: WHATSAPP_MODE (default `disabled`); use `stub` em dev pra ver as mensagens nos logs sem parear chip
 
 cd apps/api && node ace migration:run
 ```
@@ -120,7 +121,8 @@ Entidades principais: `users`, `seasons`, `rounds`, `matches`, `guesses`, `score
 | 1 — Foundation + Core Domain | ✅ concluída | Monorepo, schema, models, serviços, endpoints admin |
 | 2 — football-data.org | ✅ concluída | Sync da rodada atual, picker do jogo em destaque, refresh de placares |
 | 3 — Scheduler | ✅ concluída | Jobs recorrentes via node-cron: abertura (30min), fechamento (5min), sync de placares + finalização (10min) |
-| 4 — WhatsApp | pendente | Integração Baileys, parser de palpites, envio de ranking |
+| 4 — WhatsApp outbound | ✅ concluída | Baileys client + notifier + wire nos jobs: anúncio de rodada aberta/fechada e mensagem final com pontuação + ranking, no grupo |
+| 5 — WhatsApp inbound | pendente | Handler de DMs, parser de placar, registro de palpite via WhatsApp |
 
 ## Licença
 
