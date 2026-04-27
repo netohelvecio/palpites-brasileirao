@@ -12,7 +12,10 @@ import baileys, {
 
 const makeWASocket = (baileys as any).default ?? baileys
 import env from '#start/env'
-import WhatsAppClient, { type WhatsAppMode } from './whatsapp_client.js'
+import WhatsAppClient, {
+  type WhatsAppMode,
+  type IncomingMessageHandler,
+} from './whatsapp_client.js'
 
 type ConnState = 'connecting' | 'open' | 'close'
 
@@ -23,7 +26,7 @@ type ConnState = 'connecting' | 'open' | 'close'
  */
 function makeSilentBaileysLogger(): any {
   const noop = () => {}
-  const logger: any = {
+  const silentLogger: any = {
     level: 'silent',
     trace: noop,
     debug: noop,
@@ -32,8 +35,8 @@ function makeSilentBaileysLogger(): any {
     error: noop,
     fatal: noop,
   }
-  logger.child = () => logger
-  return logger
+  silentLogger.child = () => silentLogger
+  return silentLogger
 }
 
 export default class BaileysClient extends WhatsAppClient {
@@ -42,6 +45,7 @@ export default class BaileysClient extends WhatsAppClient {
   private state: ConnState = 'close'
   private reconnectAttempt = 0
   private shuttingDown = false
+  private messageHandler: IncomingMessageHandler | null = null
 
   async connect(): Promise<void> {
     const authPath = env.get('WHATSAPP_AUTH_PATH')
@@ -81,6 +85,17 @@ export default class BaileysClient extends WhatsAppClient {
     await this.socket.sendMessage(jid, { text })
   }
 
+  async sendToUser(phoneNumber: string, text: string): Promise<void> {
+    if (!this.socket || this.state !== 'open') {
+      throw new Error('BaileysClient: socket não conectado')
+    }
+    await this.socket.sendMessage(`${phoneNumber}@s.whatsapp.net`, { text })
+  }
+
+  onMessage(handler: IncomingMessageHandler): void {
+    this.messageHandler = handler
+  }
+
   /** Lista os grupos pareados — usado pelo ace command whatsapp:list-groups. */
   async fetchGroups(): Promise<{ jid: string; name: string }[]> {
     if (!this.socket || this.state !== 'open') {
@@ -103,7 +118,7 @@ export default class BaileysClient extends WhatsAppClient {
       printQRInTerminal: false,
       browser: Browsers.macOS('Desktop'),
       logger: makeSilentBaileysLogger(),
-    } as any) as WASocket
+    }) as WASocket
     this.socket = socket
 
     socket.ev.on('creds.update', saveCreds)
@@ -144,6 +159,25 @@ export default class BaileysClient extends WhatsAppClient {
             logger.error({ err }, 'BaileysClient: falha ao reconectar')
           })
         }, delay)
+      }
+    })
+
+    socket.ev.on('messages.upsert', async ({ messages, type }) => {
+      if (type !== 'notify') return
+      if (!this.messageHandler) return
+      for (const m of messages) {
+        if (m.key.fromMe) continue
+        if (!m.key.remoteJid?.endsWith('@s.whatsapp.net')) continue
+        const text = m.message?.conversation ?? m.message?.extendedTextMessage?.text ?? ''
+        if (!text.trim()) continue
+        const fromNumber = m.key.remoteJid.replace(/@s\.whatsapp\.net$/, '')
+        await this.messageHandler({
+          fromNumber,
+          text,
+          messageId: m.key.id ?? 'unknown',
+        }).catch((err) => {
+          logger.error({ err, fromNumber }, 'BaileysClient: inbound handler threw')
+        })
       }
     })
   }

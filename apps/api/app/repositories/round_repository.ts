@@ -31,4 +31,14 @@ export default class RoundRepository extends BaseRepository<typeof Round> {
       })
       .preload('match')
   }
+
+  findOpenInActiveSeason() {
+    return Round.query()
+      .where('status', RoundStatus.OPEN)
+      .whereHas('season', (s) => {
+        s.where('is_active', true)
+      })
+      .preload('match')
+      .first()
+  }
 }

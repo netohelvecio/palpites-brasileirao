@@ -25,6 +25,30 @@ export default class GuessRepository extends BaseRepository<typeof Guess> {
       .preload('match')
   }
 
+  async upsertByUserAndMatch(
+    userId: string,
+    matchId: string,
+    payload: { homeScore: number; awayScore: number }
+  ) {
+    const existing = await this.findByUserAndMatch(userId, matchId)
+    if (existing) {
+      existing.merge({
+        homeScore: payload.homeScore,
+        awayScore: payload.awayScore,
+        points: null,
+      })
+      await existing.save()
+      return existing
+    }
+    return Guess.create({
+      userId,
+      matchId,
+      homeScore: payload.homeScore,
+      awayScore: payload.awayScore,
+      points: null,
+    })
+  }
+
   listBySeasonAndUser(seasonId: string, userId: string, trx?: TransactionClientContract) {
     return Guess.query({ client: trx })
       .where('user_id', userId)
