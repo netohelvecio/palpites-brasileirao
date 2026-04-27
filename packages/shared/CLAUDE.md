@@ -19,7 +19,7 @@ src/
 ## O que mora aqui
 
 - **Tipos de domínio**: `RoundStatus`, `MatchStatus`, enums de status de negócio.
-- **DTOs de API** (futuro): tipos serializáveis de request/response.
+- **DTOs de API**: shapes serializáveis dos responses HTTP em `views.ts` (`UserSummary`, `MatchView`, `GuessListItem`, `GuessListView`).
 - **Constantes compartilhadas** (futuro): limites de placar, formatos de data, mensagens padrão do WhatsApp.
 
 ## O que NÃO mora aqui
