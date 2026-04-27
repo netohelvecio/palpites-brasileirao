@@ -107,4 +107,47 @@ test.group('WhatsAppNotifier', () => {
       app.container.restore(WhatsAppClient)
     }
   })
+
+  test('notifyRoundOpenedToUser envia DM com nome/emoji do user', async ({ assert }) => {
+    const fake = new FakeWhatsAppClient()
+    app.container.swap(WhatsAppClient, () => fake)
+    try {
+      const notifier = await app.container.make(WhatsAppNotifier)
+      await notifier.notifyRoundOpenedToUser({
+        user: { whatsappNumber: '5511987654321', name: 'Helvécio', emoji: '⚽' },
+        roundNumber: 12,
+        homeTeam: 'Palmeiras',
+        awayTeam: 'Flamengo',
+        kickoffAt: DateTime.fromISO('2026-05-04T20:00:00', { zone: 'America/Sao_Paulo' }),
+      })
+
+      assert.lengthOf(fake.sentDms, 1)
+      assert.equal(fake.sentDms[0].number, '5511987654321')
+      assert.match(fake.sentDms[0].text, /Oi Helvécio ⚽!/)
+      assert.match(fake.sentDms[0].text, /Rodada 12 aberta — Palmeiras x Flamengo/)
+    } finally {
+      app.container.restore(WhatsAppClient)
+    }
+  })
+
+  test('notifyGuessRegistered posta no grupo', async ({ assert }) => {
+    const fake = new FakeWhatsAppClient()
+    app.container.swap(WhatsAppClient, () => fake)
+    try {
+      const notifier = await app.container.make(WhatsAppNotifier)
+      await notifier.notifyGuessRegistered({
+        userName: 'Helvécio',
+        userEmoji: '⚽',
+        homeTeam: 'Palmeiras',
+        awayTeam: 'Flamengo',
+        homeScore: 2,
+        awayScore: 1,
+      })
+
+      assert.lengthOf(fake.sentMessages, 1)
+      assert.equal(fake.sentMessages[0], 'Helvécio ⚽ palpitou: Palmeiras 2 x 1 Flamengo')
+    } finally {
+      app.container.restore(WhatsAppClient)
+    }
+  })
 })
