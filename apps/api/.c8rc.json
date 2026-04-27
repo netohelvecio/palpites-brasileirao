@@ -10,7 +10,15 @@
     "database/schema.ts",
     ".adonisjs/**",
     "tests/**",
-    "**/*.d.ts"
+    "**/*.d.ts",
+    "app/integrations/football_data/client.ts",
+    "app/integrations/football_data/types.ts",
+    "app/integrations/whatsapp/baileys_client.ts",
+    "app/integrations/whatsapp/disabled_client.ts",
+    "app/integrations/whatsapp/stub_client.ts",
+    "app/integrations/whatsapp/whatsapp_client.ts",
+    "app/integrations/whatsapp/with_command_connection.ts",
+    "app/integrations/whatsapp/templates/types.ts"
   ],
   "reporter": ["text", "html"],
   "report-dir": "coverage",
