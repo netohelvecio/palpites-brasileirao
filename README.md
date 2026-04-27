@@ -27,7 +27,7 @@ A cada rodada, o jogo "oficial do bolão" é o confronto com maior soma de ponto
 
 - [football-data.org](https://www.football-data.org/) — dados de jogos, rodadas e tabela (competition `BSA`) — **integrado**
 - [node-cron](https://github.com/node-cron/node-cron) — scheduler de jobs (abertura, fechamento, sync de placares) — **integrado**
-- [Baileys](https://github.com/WhiskeySockets/Baileys) — integração com WhatsApp (chip dedicado) — **outbound integrado**; inbound (recebimento de palpites) pendente (Fase 5)
+- [Baileys](https://github.com/WhiskeySockets/Baileys) — integração com WhatsApp (chip dedicado) — **integrado** (outbound: anúncios no grupo + DM personalizada na abertura da rodada; inbound: handler de DMs com auto-cadastro `/cadastro` e parser de palpites)
 
 ## Estrutura do monorepo
 
@@ -122,7 +122,7 @@ Entidades principais: `users`, `seasons`, `rounds`, `matches`, `guesses`, `score
 | 2 — football-data.org | ✅ concluída | Sync da rodada atual, picker do jogo em destaque, refresh de placares |
 | 3 — Scheduler | ✅ concluída | Jobs recorrentes via node-cron: abertura (30min), fechamento (5min), sync de placares + finalização (10min) |
 | 4 — WhatsApp outbound | ✅ concluída | Baileys client + notifier + wire nos jobs: anúncio de rodada aberta/fechada e mensagem final com pontuação + ranking, no grupo |
-| 5 — WhatsApp inbound | pendente | Handler de DMs, parser de placar, registro de palpite via WhatsApp |
+| 5 — WhatsApp inbound | ✅ concluída | Handler de DMs com auto-cadastro stateless via `/cadastro`, parser de placar (`2x1 Time`, `1x1`), upsert + reply privado + post no grupo a cada palpite. DMs personalizadas no abertura da rodada |
 
 ## Licença
 
