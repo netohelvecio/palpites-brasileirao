@@ -5,6 +5,7 @@ import FixturesSyncService, { type SyncReport } from '#services/fixtures_sync_se
 import RoundRepository from '#repositories/round_repository'
 import SeasonRepository from '#repositories/season_repository'
 import MatchRepository from '#repositories/match_repository'
+import UserRepository from '#repositories/user_repository'
 import WhatsAppNotifier from '#services/whatsapp_notifier'
 
 export interface OpenRoundRun {
@@ -25,7 +26,8 @@ export default class OpenRoundJob {
     private roundRepository: RoundRepository,
     private matchRepository: MatchRepository,
     private fixturesSyncService: FixturesSyncService,
-    private notifier: WhatsAppNotifier
+    private notifier: WhatsAppNotifier,
+    private userRepository: UserRepository
   ) {}
 
   async run(): Promise<OpenRoundReport> {
@@ -60,6 +62,32 @@ export default class OpenRoundJob {
             })
             await this.roundRepository.update(round, { status: RoundStatus.OPEN })
             roundOpened = true
+
+            const users = await this.userRepository.list()
+            for (const user of users) {
+              try {
+                await this.notifier.notifyRoundOpenedToUser({
+                  user: {
+                    whatsappNumber: user.whatsappNumber,
+                    name: user.name,
+                    emoji: user.emoji,
+                  },
+                  roundNumber: round.number,
+                  homeTeam: match.homeTeam,
+                  awayTeam: match.awayTeam,
+                  kickoffAt: match.kickoffAt,
+                })
+              } catch (err) {
+                logger.warn(
+                  {
+                    userId: user.id,
+                    err: err instanceof Error ? err.message : String(err),
+                  },
+                  'OpenRoundJob: falha ao mandar DM pra user'
+                )
+              }
+              await new Promise((r) => setTimeout(r, 1000))
+            }
           }
         }
 

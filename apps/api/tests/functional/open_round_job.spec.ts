@@ -7,6 +7,7 @@ import OpenRoundJob from '#jobs/open_round_job'
 import { SeasonFactory } from '#factories/season_factory'
 import { RoundFactory } from '#factories/round_factory'
 import { MatchFactory } from '#factories/match_factory'
+import { UserFactory } from '#factories/user_factory'
 import { FakeFootballDataClient, fakeStandings, fakeMatch } from '#tests/helpers/football_data_mock'
 import { FakeWhatsAppClient } from '#tests/helpers/whatsapp_mock'
 
@@ -190,4 +191,80 @@ test.group('OpenRoundJob', (group) => {
       teardownFakes()
     }
   })
+
+  test('DM personalizada pra cada user após flip pra open', async ({ assert }) => {
+    await SeasonFactory.merge({
+      isActive: true,
+      year: 2026,
+      externalCompetitionCode: 'BSA',
+    }).create()
+    await UserFactory.merge({
+      whatsappNumber: '5511999990001',
+      name: 'Helvécio',
+      emoji: '⚽',
+    }).create()
+    await UserFactory.merge({
+      whatsappNumber: '5511999990002',
+      name: 'Ana',
+      emoji: '🦊',
+    }).create()
+
+    const { football, whatsapp } = setupFakes()
+    football.standings = fakeStandings(12, 2026, { 1: 30, 2: 25 })
+    football.matchesByMatchday.set('2026:12', [fakeMatch(1001, 1, 2, 12)])
+
+    try {
+      const job = await app.container.make(OpenRoundJob)
+      const report = await job.run()
+
+      assert.equal(report.runs[0].roundOpened, true)
+      assert.lengthOf(whatsapp.sentMessages, 1)
+
+      assert.lengthOf(whatsapp.sentDms, 2)
+      const numbers = whatsapp.sentDms.map((d) => d.number).sort()
+      assert.deepEqual(numbers, ['5511999990001', '5511999990002'])
+
+      const helvecioDm = whatsapp.sentDms.find((d) => d.number === '5511999990001')
+      assert.match(helvecioDm!.text, /Oi Helvécio ⚽!/)
+      assert.match(helvecioDm!.text, /Rodada 12 aberta/)
+
+      const anaDm = whatsapp.sentDms.find((d) => d.number === '5511999990002')
+      assert.match(anaDm!.text, /Oi Ana 🦊!/)
+    } finally {
+      teardownFakes()
+    }
+  }).timeout(15000)
+
+  test('falha de DM individual não trava outros users nem desfaz flip', async ({ assert }) => {
+    const season = await SeasonFactory.merge({
+      isActive: true,
+      year: 2026,
+      externalCompetitionCode: 'BSA',
+    }).create()
+    await UserFactory.merge({ whatsappNumber: '5511999990003' }).create()
+    await UserFactory.merge({ whatsappNumber: '5511999990004' }).create()
+
+    const { football, whatsapp } = setupFakes()
+    whatsapp.throwOnSendToUser = new Error('baileys: number blocked')
+    football.standings = fakeStandings(12, 2026, { 1: 30, 2: 25 })
+    football.matchesByMatchday.set('2026:12', [fakeMatch(1001, 1, 2, 12)])
+
+    try {
+      const job = await app.container.make(OpenRoundJob)
+      const report = await job.run()
+
+      assert.equal(report.runs[0].roundOpened, true)
+      assert.lengthOf(whatsapp.sentMessages, 1)
+      assert.lengthOf(whatsapp.sentDms, 0)
+
+      const RoundModel = (await import('#models/round')).default
+      const round = await RoundModel.query()
+        .where('season_id', season.id)
+        .where('number', 12)
+        .firstOrFail()
+      assert.equal(round.status, 'open')
+    } finally {
+      teardownFakes()
+    }
+  }).timeout(15000)
 })
