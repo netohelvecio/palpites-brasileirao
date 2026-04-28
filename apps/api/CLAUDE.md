@@ -79,11 +79,13 @@ export default class User extends UserSchema {
 ```
 
 Motivos:
+
 - `extends UserSchema` evita duplicar decorators de colunas (o schema é auto-gerado do DB).
 - `selfAssignPrimaryKey = true` + hook com `randomUUID()` garante que Lucid sempre tem o ID após insert, sem depender do default do DB.
 - Soft delete é global via `beforeFind`/`beforeFetch`.
 
 Para status (enum), **redefina o tipo** no model importando de `@palpites/shared`:
+
 ```ts
 import type { RoundStatus } from '@palpites/shared'
 // ...

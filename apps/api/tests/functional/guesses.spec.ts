@@ -113,7 +113,10 @@ test.group('Guesses', (group) => {
     res.assertStatus(204)
   })
 
-  test('GET /rounds/:roundId/guesses retorna match + guesses formatados', async ({ client, assert }) => {
+  test('GET /rounds/:roundId/guesses retorna match + guesses formatados', async ({
+    client,
+    assert,
+  }) => {
     const { round, match, user } = await seedRoundMatchUser()
     await GuessFactory.merge({
       userId: user.id,
@@ -139,7 +142,10 @@ test.group('Guesses', (group) => {
     assert.notExists(body.guesses[0].createdAt)
   })
 
-  test('GET /rounds/:roundId/guesses retorna match:null + guesses:[] quando rodada não tem jogo', async ({ client, assert }) => {
+  test('GET /rounds/:roundId/guesses retorna match:null + guesses:[] quando rodada não tem jogo', async ({
+    client,
+    assert,
+  }) => {
     const round = await RoundFactory.with('season').create()
     const res = await client.get(`/api/v1/rounds/${round.id}/guesses`).headers(HEADERS)
     res.assertStatus(200)

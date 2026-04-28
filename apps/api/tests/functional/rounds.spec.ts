@@ -10,7 +10,10 @@ test.group('Rounds', (group) => {
 
   test('GET /seasons/:seasonId/rounds lista rodadas', async ({ client, assert }) => {
     const season = await SeasonFactory.create()
-    await RoundFactory.merge([{ seasonId: season.id, number: 1 }, { seasonId: season.id, number: 2 }]).createMany(2)
+    await RoundFactory.merge([
+      { seasonId: season.id, number: 1 },
+      { seasonId: season.id, number: 2 },
+    ]).createMany(2)
 
     const res = await client.get(`/api/v1/seasons/${season.id}/rounds`).headers(HEADERS)
     res.assertStatus(200)
