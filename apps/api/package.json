@@ -20,6 +20,7 @@
     "db:migrate": "node ace migration:run",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit"
   },
   "imports": {

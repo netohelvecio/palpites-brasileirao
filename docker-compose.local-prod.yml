@@ -1,0 +1,8 @@
+services:
+  caddy:
+    ports: !override
+      - "8080:8080"
+    volumes: !override
+      - ./infra/Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config

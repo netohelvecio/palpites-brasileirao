@@ -31,8 +31,9 @@ src/
 
 ## Convenções
 
-- **ESM only** — `"type": "module"` implícito via config do TS.
-- **Source-to-source linking**: `main` e `types` apontam pro TS direto (`./src/index.ts`). Não há build obrigatório pro consumer usar — o TSC do consumidor resolve.
+- **ESM only** — `"type": "module"` no `package.json`.
+- **Build-on-install**: `main` e `types` apontam pra `./dist/...`. O script `prepare: tsc` roda automaticamente em `pnpm install` e gera `dist/`. Necessário pra produção: o build do Adonis (`apps/api`) emite JS que importa `@palpites/shared` resolvido via `dist/index.js`; sem `dist/`, o Node tenta carregar `src/index.ts` e quebra com `Cannot find module './status.js'` (a pista é uma dependência interna usar extensão `.js` num arquivo `.ts`).
+- **Editou shared? Re-builda**: durante dev, mudanças em `src/` **não** se propagam via HMR. Rode `pnpm --filter @palpites/shared build` ou deixe `pnpm --filter @palpites/shared build:watch` rodando em outra aba (`tsc -w`).
 - **`lint` = `tsc --noEmit`** — não há ESLint aqui ainda.
 - **Export nomeado sempre**, sem default exports.
 - **Enums como union de literais** (ex: `type RoundStatus = 'pending' | 'open' | ...`), não `enum`. Evita gerar runtime code e combina melhor com validators (Vine).
@@ -43,7 +44,7 @@ src/
 import type { RoundStatus } from '@palpites/shared'
 ```
 
-Está linkado via pnpm workspace (`workspace:*` em `dependencies`). Mudanças em `src/index.ts` aparecem imediatamente na API sem rebuild.
+Está linkado via pnpm workspace (`workspace:^` em `dependencies`). O symlink em `apps/api/node_modules/@palpites/shared` aponta pra `packages/shared`, e o `main` do shared resolve pra `./dist/index.js`. Pra mudanças em `src/` chegarem, precisa rebuildar shared (ver "Build-on-install" acima).
 
 ## Ao adicionar algo
 

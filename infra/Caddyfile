@@ -1,0 +1,7 @@
+palpites-bolao.duckdns.org {
+	reverse_proxy api:3333
+	encode gzip
+	log {
+		output file /data/access.log
+	}
+}
