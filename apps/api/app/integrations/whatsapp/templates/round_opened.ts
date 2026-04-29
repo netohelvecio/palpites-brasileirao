@@ -8,10 +8,10 @@ export interface RoundOpenedInput {
 }
 
 export function roundOpenedMessage(input: RoundOpenedInput): string {
-  const kickoff = input.kickoffAt.setZone('America/Sao_Paulo').toFormat('dd/MM HH:mm')
+  const kickoff = input.kickoffAt.setZone('America/Sao_Paulo').toFormat("dd/MM 'às' HH:mm")
   return [
-    `📢 Rodada ${input.roundNumber} aberta!`,
-    `Jogo: ${input.homeTeam} x ${input.awayTeam}`,
-    `Kickoff: ${kickoff}`,
+    `📢 Rodada ${input.roundNumber} aberta! 🔥`,
+    `⚽ Jogo: ${input.homeTeam} x ${input.awayTeam}`,
+    `⏰ Início: ${kickoff}`,
   ].join('\n')
 }

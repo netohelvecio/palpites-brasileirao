@@ -3,7 +3,7 @@ import { DateTime } from 'luxon'
 import { roundOpenedMessage } from '#integrations/whatsapp/templates/round_opened'
 
 test.group('templates/round_opened', () => {
-  test('formata anúncio com número da rodada, times e kickoff', ({ assert }) => {
+  test('formata anúncio com número da rodada, times e início', ({ assert }) => {
     const text = roundOpenedMessage({
       roundNumber: 12,
       homeTeam: 'Palmeiras',
@@ -13,7 +13,9 @@ test.group('templates/round_opened', () => {
 
     assert.equal(
       text,
-      '📢 Rodada 12 aberta!\n' + 'Jogo: Palmeiras x Flamengo\n' + 'Kickoff: 04/05 20:00'
+      '📢 Rodada 12 aberta! 🔥\n' +
+        '⚽ Jogo: Palmeiras x Flamengo\n' +
+        '⏰ Início: 04/05 às 20:00'
     )
   })
 
@@ -24,7 +26,7 @@ test.group('templates/round_opened', () => {
       awayTeam: 'São Paulo',
       kickoffAt: DateTime.fromISO('2026-04-09T08:30:00', { zone: 'America/Sao_Paulo' }),
     })
-    assert.match(text, /Kickoff: 09\/04 08:30/)
+    assert.match(text, /⏰ Início: 09\/04 às 08:30/)
   })
 
   test('força timezone America/Sao_Paulo independente do input', ({ assert }) => {
@@ -34,6 +36,6 @@ test.group('templates/round_opened', () => {
       awayTeam: 'B',
       kickoffAt: DateTime.fromISO('2026-05-04T23:00:00', { zone: 'utc' }),
     })
-    assert.match(text, /Kickoff: 04\/05 20:00/)
+    assert.match(text, /⏰ Início: 04\/05 às 20:00/)
   })
 })
