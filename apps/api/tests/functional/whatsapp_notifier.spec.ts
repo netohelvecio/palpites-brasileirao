@@ -37,7 +37,7 @@ test.group('WhatsAppNotifier', () => {
       assert.lengthOf(fake.sentMessages, 1)
       assert.match(fake.sentMessages[0], /📢 Rodada 5 aberta!/)
       assert.match(fake.sentMessages[0], /Palmeiras x Flamengo/)
-      assert.match(fake.sentMessages[0], /04\/05 20:00/)
+      assert.match(fake.sentMessages[0], /04\/05 às 20:00/)
     } finally {
       app.container.restore(WhatsAppClient)
     }

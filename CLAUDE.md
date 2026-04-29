@@ -11,6 +11,8 @@ pnpm --filter @palpites/api dev   # API em http://localhost:3333
 
 Primeira vez, rode também `cd apps/api && node ace migration:run`.
 
+> **Gotcha**: sem `nvm use`, qualquer `node ace ...` quebra com `ERR_UNKNOWN_FILE_EXTENSION ".ts"` — Adonis 7 usa o type-stripping nativo do Node 22+.
+
 ## Propósito
 
 API para automatizar um bolão anual do Brasileirão entre ~10 amigos, hoje operado manualmente num grupo de WhatsApp. O sistema escolhe automaticamente o jogo da rodada (confronto com maior soma de pontos dos dois times na tabela), recebe palpites via WhatsApp, calcula pontuação e publica ranking.
