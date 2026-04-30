@@ -14,7 +14,7 @@ services:
       - api
 
   api:
-    image: ${API_IMAGE:-ghcr.io/CHANGE_ME/palpites-api:latest}
+    image: ${API_IMAGE:-ghcr.io/netohelvecio/palpites-api:latest}
     env_file: ./apps/api/.env.production
     volumes:
       - whatsapp_auth:/app/storage/whatsapp-auth
