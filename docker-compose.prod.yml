@@ -26,6 +26,10 @@ services:
 
   postgres:
     image: postgres:16-alpine
+    # Bind 5432 only to VM loopback — externo continua bloqueado (ufw + bind 127.0.0.1).
+    # Acesso externo via SSH tunnel: ssh -N -L 15432:127.0.0.1:5432 deploy@<VM-IP>
+    ports:
+      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_USER: palpites
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
