@@ -1,4 +1,4 @@
-palpites-bolao.duckdns.org {
+palpites-brasileirao.duckdns.org {
 	reverse_proxy api:3333
 	encode gzip
 	log {

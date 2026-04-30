@@ -5,7 +5,7 @@ DNS dinâmico gratuito apontando pra IP público da VM Oracle. Em conjunto com o
 ## 1. Criar conta e subdomínio
 
 1. Acessar https://www.duckdns.org/ → login com Google/GitHub
-2. Em "domains", criar `palpites-bolao` (ou outro nome desejado)
+2. Em "domains", criar `palpites-brasileirao` (ou outro nome desejado)
 3. Apontar pro IP público da VM no campo "current ip"
 4. Copiar o **token** exibido no topo da página (formato UUID)
 
@@ -15,7 +15,7 @@ Oracle Free Tier dá IP público reservado, mas atualização periódica é segu
 
 ```bash
 TOKEN="<seu-token-duckdns>"
-SUBDOMAIN="palpites-bolao"
+SUBDOMAIN="palpites-brasileirao"
 
 echo "*/5 * * * * deploy curl -s 'https://www.duckdns.org/update?domains=${SUBDOMAIN}&token=${TOKEN}&ip=' >> /var/log/duckdns.log 2>&1" |
   sudo tee /etc/cron.d/duckdns
@@ -35,7 +35,7 @@ curl "https://www.duckdns.org/update?domains=${SUBDOMAIN}&token=${TOKEN}&ip="
 # expected output: OK
 
 # Resolução DNS:
-dig +short palpites-bolao.duckdns.org
+dig +short palpites-brasileirao.duckdns.org
 # expected: IP da VM
 ```
 
@@ -44,7 +44,7 @@ dig +short palpites-bolao.duckdns.org
 Após `docker compose -f docker-compose.prod.yml up -d` rodar com a stack pronta:
 
 ```bash
-curl -i https://palpites-bolao.duckdns.org/health
+curl -i https://palpites-brasileirao.duckdns.org/health
 ```
 
 Expected: `HTTP/2 200` com body `{"status":"ok","db":"up"}`.
