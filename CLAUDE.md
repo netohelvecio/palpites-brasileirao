@@ -108,6 +108,11 @@ pnpm --filter @palpites/shared lint
 | Plano 3 (3.1–3.3) | ✅ concluído | Scheduler (node-cron) + 3 jobs: OpenRoundJob (30min), CloseRoundJob (5min), SyncScoresJob (10min) com `RoundFinalizerService` transacional. Planos em `docs/superpowers/plans/2026-04-24-plan-3.*.md` |
 | Plano 4 (4.1–4.5) | ✅ concluído | WhatsApp **outbound** via Baileys — client foundation (stub/disabled/real), templates, notifier, wire em todos os jobs (open/close/sync_scores). Mensagens só no grupo; DMs e inbound ficam para Fase 5. Planos em `docs/superpowers/plans/2026-04-25-plan-4.*.md` |
 | Plano 5 (5.1–5.5) | ✅ concluído | WhatsApp **inbound** — port estendida com `sendToUser`/`onMessage`, `WhatsAppInboundHandler` (auto-cadastro stateless via `/cadastro`, parser, upsert, reply privado + post no grupo); DMs personalizadas no abertura de rodada via laço no `OpenRoundJob`. Planos em `docs/superpowers/plans/2026-04-25-plan-5.*.md` |
+| Plano 6 (6.1–6.5) | ✅ concluído | Deploy — VM Oracle Always Free (x86_64, Sao Paulo) com Docker Compose (`api` + `caddy` + `postgres`), Caddy/Let's Encrypt em `palpites-brasileirao.duckdns.org`, GitHub Actions CI/CD (`quality.yml` reusable + `ci.yml` em PRs + `deploy.yml` em push na `main` → quality → build amd64 → push GHCR → SSH + migrations) e backup diário `pg_dump → Oracle Object Storage` via cron + OCI CLI. Planos em `docs/superpowers/plans/2026-04-27-plan-6.*.md` |
+
+## Produção
+
+Deploy em **Oracle Cloud Always Free** (VM x86_64, Sao Paulo) acessível em `https://palpites-brasileirao.duckdns.org`. Stack via Docker Compose (api + caddy + postgres) em `/opt/palpites` na VM, SSH via `deploy@147.15.112.59`. Backups diários `pg_dump → Object Storage` (bucket `palpites-backups`, prefixo `pg/`). CI/CD: `quality.yml` (reusable) + `ci.yml` (PRs/branches) + `deploy.yml` (push em `main` → quality → build amd64 → push GHCR → SSH + migrations). Atualizar app em prod = `git push origin main`. Runbooks em `docs/runbooks/` (`backup-setup.md`, `duckdns-setup.md`, `github-secrets.md`).
 
 ## Fontes de verdade
 

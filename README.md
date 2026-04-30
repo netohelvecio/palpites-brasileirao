@@ -28,6 +28,7 @@ A cada rodada, o jogo "oficial do bolão" é o confronto com maior soma de ponto
 - [football-data.org](https://www.football-data.org/) — dados de jogos, rodadas e tabela (competition `BSA`) — **integrado**
 - [node-cron](https://github.com/node-cron/node-cron) — scheduler de jobs (abertura, fechamento, sync de placares) — **integrado**
 - [Baileys](https://github.com/WhiskeySockets/Baileys) — integração com WhatsApp (chip dedicado) — **integrado** (outbound: anúncios no grupo + DM personalizada na abertura da rodada; inbound: handler de DMs com auto-cadastro `/cadastro` e parser de palpites)
+- **Hospedagem:** Oracle Cloud Always Free (VM x86_64, Sao Paulo) com [Caddy](https://caddyserver.com/) (TLS automático via Let's Encrypt), [DuckDNS](https://www.duckdns.org/) (DNS dinâmico) e backup diário `pg_dump → Object Storage` — **integrado**
 
 ## Estrutura do monorepo
 
@@ -123,6 +124,7 @@ Entidades principais: `users`, `seasons`, `rounds`, `matches`, `guesses`, `score
 | 3 — Scheduler | ✅ concluída | Jobs recorrentes via node-cron: abertura (30min), fechamento (5min), sync de placares + finalização (10min) |
 | 4 — WhatsApp outbound | ✅ concluída | Baileys client + notifier + wire nos jobs: anúncio de rodada aberta/fechada e mensagem final com pontuação + ranking, no grupo |
 | 5 — WhatsApp inbound | ✅ concluída | Handler de DMs com auto-cadastro stateless via `/cadastro`, parser de placar (`2x1 Time`, `1x1`), upsert + reply privado + post no grupo a cada palpite. DMs personalizadas no abertura da rodada |
+| 6 — Deploy | ✅ concluída | App rodando 24/7 em VM Oracle Always Free com Caddy/Let's Encrypt, DuckDNS e backup diário do Postgres pra Object Storage. CI/CD via GitHub Actions: `ci.yml` (PRs/branches) e `deploy.yml` (push em `main` → quality → build amd64 → push GHCR → SSH deploy + migrations) compartilham `quality.yml` reusable |
 
 ## Licença
 

@@ -117,6 +117,7 @@ pnpm test:functional  # apenas functional
 pnpm typecheck        # tsc --noEmit
 pnpm lint             # eslint .
 pnpm format           # prettier --write .
+pnpm format:check     # prettier --check . (usado pelo CI)
 pnpm build            # node ace build (produção)
 ```
 
