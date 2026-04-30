@@ -10,11 +10,11 @@ export interface RoundOpenedDmInput {
 }
 
 export function roundOpenedDmMessage(input: RoundOpenedDmInput): string {
-  const kickoff = input.kickoffAt.setZone('America/Sao_Paulo').toFormat('dd/MM HH:mm')
+  const kickoff = input.kickoffAt.setZone('America/Sao_Paulo').toFormat("dd/MM 'às' HH:mm")
   return [
     `Oi ${input.userName} ${input.userEmoji}!`,
-    `📢 Rodada ${input.roundNumber} aberta — ${input.homeTeam} x ${input.awayTeam}`,
-    `Kickoff: ${kickoff}`,
+    `📢 Rodada ${input.roundNumber} aberta — ${input.homeTeam} x ${input.awayTeam} 🔥`,
+    `⏰ Início: ${kickoff}`,
     '',
     `Manda o palpite aqui no privado. Ex: 2x1 ${input.homeTeam}`,
   ].join('\n')

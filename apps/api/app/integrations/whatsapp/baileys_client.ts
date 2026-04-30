@@ -85,11 +85,14 @@ export default class BaileysClient extends WhatsAppClient {
     await this.socket.sendMessage(jid, { text })
   }
 
-  async sendToUser(phoneNumber: string, text: string): Promise<void> {
+  async sendToUser(phoneNumberOrJid: string, text: string): Promise<void> {
     if (!this.socket || this.state !== 'open') {
       throw new Error('BaileysClient: socket não conectado')
     }
-    await this.socket.sendMessage(`${phoneNumber}@s.whatsapp.net`, { text })
+    const jid = phoneNumberOrJid.includes('@')
+      ? phoneNumberOrJid
+      : `${phoneNumberOrJid}@s.whatsapp.net`
+    await this.socket.sendMessage(jid, { text })
   }
 
   onMessage(handler: IncomingMessageHandler): void {
@@ -103,6 +106,22 @@ export default class BaileysClient extends WhatsAppClient {
     }
     const groups = await this.socket.groupFetchAllParticipating()
     return Object.values(groups).map((g) => ({ jid: g.id, name: g.subject ?? '(sem nome)' }))
+  }
+
+  /** Resolve o lid de um telefone E.164 — usado pelo ace command whatsapp:lookup-lid. */
+  async lookupNumber(
+    phone: string
+  ): Promise<{ jid: string; lid: string | null; exists: boolean }[]> {
+    if (!this.socket || this.state !== 'open') {
+      throw new Error('BaileysClient: socket não conectado')
+    }
+    const result = await this.socket.onWhatsApp(phone)
+    if (!result) return []
+    return result.map((r: any) => ({
+      jid: r.jid,
+      lid: typeof r.lid === 'string' ? r.lid : null,
+      exists: !!r.exists,
+    }))
   }
 
   private async openSocket(): Promise<void> {
@@ -167,10 +186,37 @@ export default class BaileysClient extends WhatsAppClient {
       if (!this.messageHandler) return
       for (const m of messages) {
         if (m.key.fromMe) continue
-        if (!m.key.remoteJid?.endsWith('@s.whatsapp.net')) continue
+
+        const isPlainDM = m.key.remoteJid?.endsWith('@s.whatsapp.net') ?? false
+        const isLidDM = m.key.remoteJid?.endsWith('@lid') ?? false
+        if (!isPlainDM && !isLidDM) continue
+
         const text = m.message?.conversation ?? m.message?.extendedTextMessage?.text ?? ''
         if (!text.trim()) continue
-        const fromNumber = m.key.remoteJid.replace(/@s\.whatsapp\.net$/, '')
+
+        // @lid: tenta resolver pro telefone real via senderPn (Baileys 6.7+).
+        // Se não der, usa o JID @lid completo — sendToUser aceita JID, então a reply ainda chega.
+        let fromNumber: string
+        if (isPlainDM) {
+          fromNumber = m.key.remoteJid!.replace(/@s\.whatsapp\.net$/, '')
+        } else {
+          const senderPn = (m.key as any).senderPn as string | undefined
+          fromNumber =
+            senderPn && typeof senderPn === 'string'
+              ? senderPn.replace(/@s\.whatsapp\.net$/, '')
+              : m.key.remoteJid!
+        }
+
+        logger.info(
+          {
+            remoteJid: m.key.remoteJid,
+            pushName: m.pushName ?? null,
+            fromNumber,
+            textPreview: text.slice(0, 80),
+          },
+          'BaileysClient: DM inbound'
+        )
+
         await this.messageHandler({
           fromNumber,
           text,
