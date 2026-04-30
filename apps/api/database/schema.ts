@@ -8,7 +8,17 @@ import { BaseModel, column } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
 
 export class GuessSchema extends BaseModel {
-  static $columns = ['awayScore', 'createdAt', 'homeScore', 'id', 'isDeleted', 'matchId', 'points', 'updatedAt', 'userId'] as const
+  static $columns = [
+    'awayScore',
+    'createdAt',
+    'homeScore',
+    'id',
+    'isDeleted',
+    'matchId',
+    'points',
+    'updatedAt',
+    'userId',
+  ] as const
   $columns = GuessSchema.$columns
   @column()
   declare awayScore: number
@@ -31,7 +41,20 @@ export class GuessSchema extends BaseModel {
 }
 
 export class MatchSchema extends BaseModel {
-  static $columns = ['awayScore', 'awayTeam', 'createdAt', 'externalId', 'homeScore', 'homeTeam', 'id', 'isDeleted', 'kickoffAt', 'roundId', 'status', 'updatedAt'] as const
+  static $columns = [
+    'awayScore',
+    'awayTeam',
+    'createdAt',
+    'externalId',
+    'homeScore',
+    'homeTeam',
+    'id',
+    'isDeleted',
+    'kickoffAt',
+    'roundId',
+    'status',
+    'updatedAt',
+  ] as const
   $columns = MatchSchema.$columns
   @column()
   declare awayScore: number | null
@@ -60,7 +83,15 @@ export class MatchSchema extends BaseModel {
 }
 
 export class RoundSchema extends BaseModel {
-  static $columns = ['createdAt', 'id', 'isDeleted', 'number', 'seasonId', 'status', 'updatedAt'] as const
+  static $columns = [
+    'createdAt',
+    'id',
+    'isDeleted',
+    'number',
+    'seasonId',
+    'status',
+    'updatedAt',
+  ] as const
   $columns = RoundSchema.$columns
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
@@ -79,7 +110,15 @@ export class RoundSchema extends BaseModel {
 }
 
 export class ScoreSchema extends BaseModel {
-  static $columns = ['exactScoresCount', 'id', 'isDeleted', 'seasonId', 'totalPoints', 'updatedAt', 'userId'] as const
+  static $columns = [
+    'exactScoresCount',
+    'id',
+    'isDeleted',
+    'seasonId',
+    'totalPoints',
+    'updatedAt',
+    'userId',
+  ] as const
   $columns = ScoreSchema.$columns
   @column()
   declare exactScoresCount: number
@@ -98,7 +137,18 @@ export class ScoreSchema extends BaseModel {
 }
 
 export class SeasonSchema extends BaseModel {
-  static $columns = ['createdAt', 'endsAt', 'externalCompetitionCode', 'id', 'isActive', 'isDeleted', 'name', 'startsAt', 'updatedAt', 'year'] as const
+  static $columns = [
+    'createdAt',
+    'endsAt',
+    'externalCompetitionCode',
+    'id',
+    'isActive',
+    'isDeleted',
+    'name',
+    'startsAt',
+    'updatedAt',
+    'year',
+  ] as const
   $columns = SeasonSchema.$columns
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
@@ -123,7 +173,16 @@ export class SeasonSchema extends BaseModel {
 }
 
 export class UserSchema extends BaseModel {
-  static $columns = ['createdAt', 'emoji', 'id', 'isAdmin', 'isDeleted', 'name', 'updatedAt', 'whatsappNumber'] as const
+  static $columns = [
+    'createdAt',
+    'emoji',
+    'id',
+    'isAdmin',
+    'isDeleted',
+    'name',
+    'updatedAt',
+    'whatsappNumber',
+  ] as const
   $columns = UserSchema.$columns
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime

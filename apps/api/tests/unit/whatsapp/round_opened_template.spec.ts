@@ -13,9 +13,7 @@ test.group('templates/round_opened', () => {
 
     assert.equal(
       text,
-      '📢 Rodada 12 aberta! 🔥\n' +
-        '⚽ Jogo: Palmeiras x Flamengo\n' +
-        '⏰ Início: 04/05 às 20:00'
+      '📢 Rodada 12 aberta! 🔥\n' + '⚽ Jogo: Palmeiras x Flamengo\n' + '⏰ Início: 04/05 às 20:00'
     )
   })
 
