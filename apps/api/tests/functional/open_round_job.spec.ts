@@ -94,7 +94,7 @@ test.group('OpenRoundJob', (group) => {
       assert.equal(report.runs[0].roundOpened, false)
       assert.lengthOf(whatsapp.sentMessages, 0)
 
-      const RoundModel = (await import('#models/round')).default
+      const { default: RoundModel } = await import('#models/round')
       const round = await RoundModel.query()
         .where('season_id', season.id)
         .where('number', 12)
@@ -124,7 +124,7 @@ test.group('OpenRoundJob', (group) => {
       assert.equal(report.runs[0].roundOpened, false)
       assert.isDefined(report.runs[0].error)
 
-      const RoundModel = (await import('#models/round')).default
+      const { default: RoundModel } = await import('#models/round')
       const round = await RoundModel.query()
         .where('season_id', season.id)
         .where('number', 12)
@@ -257,7 +257,7 @@ test.group('OpenRoundJob', (group) => {
       assert.lengthOf(whatsapp.sentMessages, 1)
       assert.lengthOf(whatsapp.sentDms, 0)
 
-      const RoundModel = (await import('#models/round')).default
+      const { default: RoundModel } = await import('#models/round')
       const round = await RoundModel.query()
         .where('season_id', season.id)
         .where('number', 12)

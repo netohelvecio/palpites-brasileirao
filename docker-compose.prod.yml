@@ -1,0 +1,57 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [edge]
+    restart: unless-stopped
+    depends_on:
+      - api
+
+  api:
+    image: ${API_IMAGE:-ghcr.io/CHANGE_ME/palpites-api:latest}
+    env_file: ./apps/api/.env.production
+    volumes:
+      - whatsapp_auth:/app/storage/whatsapp-auth
+    networks: [edge, app]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: palpites
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_DB: palpites_prod
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    secrets:
+      - db_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U palpites -d palpites_prod"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [app]
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  whatsapp_auth:
+  caddy_data:
+  caddy_config:
+
+networks:
+  edge:
+  app:
+
+secrets:
+  db_password:
+    file: ./infra/secrets/db_password.txt

@@ -1,0 +1,54 @@
+name: ci
+
+on:
+  push:
+    branches-ignore: [gh-pages]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: palpites
+          POSTGRES_PASSWORD: palpites
+          POSTGRES_DB: palpites_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U palpites"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.14.0
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck (api)
+        run: pnpm --filter @palpites/api typecheck
+
+      - name: Lint (api)
+        run: pnpm --filter @palpites/api lint
+
+      - name: Prettier (api)
+        run: pnpm --filter @palpites/api format:check
+
+      - name: Test (api)
+        run: pnpm --filter @palpites/api test
+

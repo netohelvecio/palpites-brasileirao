@@ -4,7 +4,7 @@ import Season from '#models/season'
 
 export const SeasonFactory = factory
   .define(Season, async ({ faker }) => {
-    const year = faker.number.int({ min: 2020, max: 2030 })
+    const year = faker.number.int({ min: 1900, max: 9999 })
     return {
       year,
       name: `Brasileirão ${year}`,
