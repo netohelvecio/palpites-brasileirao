@@ -153,9 +153,11 @@ test.group('RoundFinalizerService', (group) => {
     await Score.create({
       userId: user.id,
       seasonId: season.id,
+      baselinePoints: 5,
+      baselineExactScoresCount: 1,
       totalPoints: 5,
       exactScoresCount: 1,
-    } as any)
+    })
 
     const finalizer = await app.container.make(RoundFinalizerService)
     const preview = await finalizer.previewFinalize(round.id)
@@ -332,6 +334,8 @@ test.group('RoundFinalizerService', (group) => {
     await Score.create({
       userId: user.id,
       seasonId: season.id,
+      baselinePoints: 6,
+      baselineExactScoresCount: 1,
       totalPoints: 6,
       exactScoresCount: 1,
     })
@@ -363,6 +367,8 @@ test.group('RoundFinalizerService', (group) => {
     await Score.create({
       userId: user.id,
       seasonId: season.id,
+      baselinePoints: 6,
+      baselineExactScoresCount: 1,
       totalPoints: 6,
       exactScoresCount: 1,
     })
@@ -398,6 +404,8 @@ test.group('RoundFinalizerService', (group) => {
     await Score.create({
       userId: user.id,
       seasonId: season.id,
+      baselinePoints: 6,
+      baselineExactScoresCount: 1,
       totalPoints: 6,
       exactScoresCount: 1,
     })

@@ -50,41 +50,43 @@ export default class RoundFinalizerService {
       }))
       .sort((a, b) => b.points - a.points)
 
-    const deltaByUser = new Map<string, { points: number; exact: number }>()
-    for (const { guess, result } of scoredGuesses) {
-      const oldPoints = guess.points ?? 0
-      const oldExact = guess.isExact === true ? 1 : 0
-      const newExact = result.isExact ? 1 : 0
-      deltaByUser.set(guess.userId, {
-        points: result.points - oldPoints,
-        exact: newExact - oldExact,
-      })
-    }
-
     const seasonId = round.seasonId
     const currentScores = await this.scoreRepository.listBySeasonWithUser(seasonId)
-    const byUserId = new Map(currentScores.map((s) => [s.userId, s]))
+    const userIdsInRound = new Set(scoredGuesses.map((s) => s.guess.userId))
 
     const ranking: RankingEntry[] = []
-    for (const score of currentScores) {
-      const delta = deltaByUser.get(score.userId) ?? { points: 0, exact: 0 }
-      ranking.push({
-        userId: score.userId,
-        name: score.user.name,
-        emoji: score.user.emoji,
-        totalPoints: score.totalPoints + delta.points,
-        exactScoresCount: score.exactScoresCount + delta.exact,
-      })
-    }
-    for (const { guess } of scoredGuesses) {
-      if (byUserId.has(guess.userId)) continue
-      const delta = deltaByUser.get(guess.userId)!
+    for (const { guess, result } of scoredGuesses) {
+      const userGuesses = await this.guessRepository.listBySeasonAndUser(seasonId, guess.userId)
+      let guessPoints = 0
+      let guessExact = 0
+      for (const ug of userGuesses) {
+        if (ug.id === guess.id) {
+          guessPoints += result.points
+          guessExact += result.isExact ? 1 : 0
+        } else {
+          guessPoints += ug.points ?? 0
+          guessExact += ug.isExact === true ? 1 : 0
+        }
+      }
+
+      const existing = await this.scoreRepository.findByUserAndSeason(guess.userId, seasonId)
       ranking.push({
         userId: guess.userId,
         name: guess.user.name,
         emoji: guess.user.emoji,
-        totalPoints: delta.points,
-        exactScoresCount: delta.exact,
+        totalPoints: (existing?.baselinePoints ?? 0) + guessPoints,
+        exactScoresCount: (existing?.baselineExactScoresCount ?? 0) + guessExact,
+      })
+    }
+
+    for (const score of currentScores) {
+      if (userIdsInRound.has(score.userId)) continue
+      ranking.push({
+        userId: score.userId,
+        name: score.user.name,
+        emoji: score.user.emoji,
+        totalPoints: score.totalPoints,
+        exactScoresCount: score.exactScoresCount,
       })
     }
 
@@ -102,30 +104,27 @@ export default class RoundFinalizerService {
     const guesses = await this.guessRepository.listByMatchId(match.id)
 
     await db.transaction(async (trx) => {
-      const deltaByUser = new Map<string, { points: number; exact: number }>()
-
+      const affectedUserIds = new Set<string>()
       for (const guess of guesses) {
-        const oldPoints = guess.points ?? 0
-        const oldExact = guess.isExact === true ? 1 : 0
-        const { points: newPoints, isExact: newIsExact } = calculatePoints(
+        const { points, isExact } = calculatePoints(
           { guessHome: guess.homeScore, guessAway: guess.awayScore },
           final,
           multiplier
         )
-        await this.guessRepository.update(guess, { points: newPoints, isExact: newIsExact }, trx)
-
-        const newExact = newIsExact ? 1 : 0
-        const acc = deltaByUser.get(guess.userId) ?? { points: 0, exact: 0 }
-        acc.points += newPoints - oldPoints
-        acc.exact += newExact - oldExact
-        deltaByUser.set(guess.userId, acc)
+        await this.guessRepository.update(guess, { points, isExact }, trx)
+        affectedUserIds.add(guess.userId)
       }
 
       const seasonId = round.seasonId
-      for (const [userId, delta] of deltaByUser) {
+      for (const userId of affectedUserIds) {
+        const userGuesses = await this.guessRepository.listBySeasonAndUser(seasonId, userId, trx)
+        const guessPoints = userGuesses.reduce((acc, g) => acc + (g.points ?? 0), 0)
+        const guessExact = userGuesses.filter((g) => g.isExact === true).length
+
         const existing = await this.scoreRepository.findByUserAndSeason(userId, seasonId, trx)
-        const totalPoints = (existing?.totalPoints ?? 0) + delta.points
-        const exactScoresCount = (existing?.exactScoresCount ?? 0) + delta.exact
+        const totalPoints = (existing?.baselinePoints ?? 0) + guessPoints
+        const exactScoresCount = (existing?.baselineExactScoresCount ?? 0) + guessExact
+
         await this.scoreRepository.upsert(userId, seasonId, { totalPoints, exactScoresCount }, trx)
       }
 

@@ -120,6 +120,8 @@ export class RoundSchema extends BaseModel {
 
 export class ScoreSchema extends BaseModel {
   static $columns = [
+    'baselineExactScoresCount',
+    'baselinePoints',
     'exactScoresCount',
     'id',
     'isDeleted',
@@ -129,6 +131,10 @@ export class ScoreSchema extends BaseModel {
     'userId',
   ] as const
   $columns = ScoreSchema.$columns
+  @column()
+  declare baselineExactScoresCount: number
+  @column()
+  declare baselinePoints: number
   @column()
   declare exactScoresCount: number
   @column({ isPrimary: true })
