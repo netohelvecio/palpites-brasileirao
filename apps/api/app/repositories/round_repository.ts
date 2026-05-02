@@ -41,4 +41,16 @@ export default class RoundRepository extends BaseRepository<typeof Round> {
       .preload('match')
       .first()
   }
+
+  listOpenWithKickoffWithin(now: DateTime, windowMinutes: number) {
+    const upper = now.plus({ minutes: windowMinutes })
+    return Round.query()
+      .where('status', RoundStatus.OPEN)
+      .whereHas('match', (m) => {
+        m.where('kickoff_at', '>', now.toJSDate())
+          .andWhere('kickoff_at', '<=', upper.toJSDate())
+          .whereNull('reminder_30_min_sent_at')
+      })
+      .preload('match')
+  }
 }
