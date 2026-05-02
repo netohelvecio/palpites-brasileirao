@@ -23,22 +23,31 @@ export default class MatchesController {
   async upsert({ params, request, response }: HttpContext) {
     const round = await this.roundRepository.findByIdOrFail(params.roundId)
     const payload = await request.validateUsing(upsertMatchValidator)
+    const pointsMultiplier = payload.pointsMultiplier ?? 1
 
     const existing = await this.matchRepository.findByRoundId(round.id)
     if (existing) {
       await this.matchRepository.update(existing, {
-        ...payload,
+        externalId: payload.externalId,
+        homeTeam: payload.homeTeam,
+        awayTeam: payload.awayTeam,
+        kickoffAt: payload.kickoffAt,
         status: MatchStatus.SCHEDULED,
         homeScore: null,
         awayScore: null,
+        pointsMultiplier,
       })
       return response.ok(existing)
     }
 
     const match = await this.matchRepository.create({
       roundId: round.id,
-      ...payload,
+      externalId: payload.externalId,
+      homeTeam: payload.homeTeam,
+      awayTeam: payload.awayTeam,
+      kickoffAt: payload.kickoffAt,
       status: MatchStatus.SCHEDULED,
+      pointsMultiplier,
     })
     return response.ok(match)
   }

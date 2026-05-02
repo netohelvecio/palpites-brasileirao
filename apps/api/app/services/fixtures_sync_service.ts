@@ -94,6 +94,7 @@ export default class FixturesSyncService {
           awayTeam: pick.match.awayTeamName,
           kickoffAt: DateTime.fromJSDate(pick.match.kickoffAt),
           status: MatchStatus.SCHEDULED,
+          pointsMultiplier: pick.pointsMultiplier,
         },
         trx
       )
