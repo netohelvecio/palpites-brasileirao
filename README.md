@@ -125,6 +125,7 @@ Entidades principais: `users`, `seasons`, `rounds`, `matches`, `guesses`, `score
 | 4 — WhatsApp outbound | ✅ concluída | Baileys client + notifier + wire nos jobs: anúncio de rodada aberta/fechada e mensagem final com pontuação + ranking, no grupo |
 | 5 — WhatsApp inbound | ✅ concluída | Handler de DMs com auto-cadastro stateless via `/cadastro`, parser de placar (`2x1 Time`, `1x1`), upsert + reply privado + post no grupo a cada palpite. DMs personalizadas no abertura da rodada |
 | 6 — Deploy | ✅ concluída | App rodando 24/7 em VM Oracle Always Free com Caddy/Let's Encrypt, DuckDNS e backup diário do Postgres pra Object Storage. CI/CD via GitHub Actions: `ci.yml` (PRs/branches) e `deploy.yml` (push em `main` → quality → build amd64 → push GHCR → SSH deploy + migrations) compartilham `quality.yml` reusable |
+| 7 — Match Reminder T-30min | ✅ concluída | Aviso automático no grupo do WhatsApp ~30min antes do kickoff do jogo da rodada, com idempotência via flag em `matches`. Fase 1 sem escalações (Fase 2 deferida) |
 
 ## Licença
 

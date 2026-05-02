@@ -94,6 +94,8 @@ import type { RoundStatus } from '@palpites/shared'
 declare status: RoundStatus
 ```
 
+**Naming-strategy gotcha com dígitos em nomes de coluna**: Lucid mapeia `snake_case → camelCase` via lodash, e dígitos formam segmentos próprios. `reminder_30_min_sent_at` (3 segmentos) → `reminder30MinSentAt`; mas `reminder_30min_sent_at` (sem underscore separando o `30` do `min`) viraria `reminder30minSentAt` no codegen, e a estratégia inversa (`reminder30MinSentAt → reminder_30_min_sent_at`) escreveria numa coluna errada — `update()` falha em runtime. **Sempre coloque underscore separando dígitos de letras nos nomes de coluna SQL** (`*_30_min_*`, não `*_30min_*`). Evita override manual de `columnName:` no model.
+
 ## Env vars
 
 Todas validadas em `start/env.ts`. Nunca acesse `process.env` direto.
@@ -122,6 +124,8 @@ pnpm build            # node ace build (produção)
 ```
 
 Migrations e seeds são via `node ace migration:*` — não têm atalho no package.json.
+
+**Após `migration:run` rode `pnpm format`**: o codegen do Adonis 7 regenera `database/schema.ts` com `$columns` em linha única, e prettier reformata pra multi-linha. Sem `format`, o lint do CI quebra.
 
 ## Testes
 
