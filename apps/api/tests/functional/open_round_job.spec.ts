@@ -267,4 +267,31 @@ test.group('OpenRoundJob', (group) => {
       teardownFakes()
     }
   }).timeout(15000)
+
+  test('passa pointsMultiplier=2 pra mensagem do grupo e DMs (rodada dobrada)', async ({
+    assert,
+  }) => {
+    await SeasonFactory.merge({
+      isActive: true,
+      year: 2026,
+      externalCompetitionCode: 'BSA',
+    }).create()
+    await UserFactory.merge({ whatsappNumber: '5511999991111' }).create()
+
+    const { football, whatsapp } = setupFakes()
+    // 1º × 2º coincide com o pick → multiplier=2 será gravado no match
+    football.standings = fakeStandings(13, 2026, { 1: 30, 2: 25 })
+    football.matchesByMatchday.set('2026:13', [fakeMatch(2001, 1, 2, 13)])
+
+    try {
+      const job = await app.container.make(OpenRoundJob)
+      await job.run()
+
+      assert.match(whatsapp.sentMessages[0], /🔥 \*RODADA VALENDO EM DOBRO!\*/)
+      assert.equal(whatsapp.sentDms.length, 1)
+      assert.match(whatsapp.sentDms[0].text, /🔥 \*RODADA VALENDO EM DOBRO!\*/)
+    } finally {
+      teardownFakes()
+    }
+  }).timeout(15000)
 })

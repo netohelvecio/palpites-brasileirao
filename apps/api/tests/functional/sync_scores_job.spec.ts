@@ -239,4 +239,55 @@ test.group('SyncScoresJob', (group) => {
       teardownFakes()
     }
   })
+
+  test('inclui disclaimer de rodada dobrada na mensagem final quando match.pointsMultiplier=2', async ({
+    assert,
+  }) => {
+    const season = await SeasonFactory.merge({ isActive: true }).create()
+    const round = await RoundFactory.merge({
+      seasonId: season.id,
+      number: 9,
+      status: 'closed',
+    }).create()
+    const match = await MatchFactory.merge({
+      roundId: round.id,
+      externalId: 3001,
+      homeTeam: 'Palmeiras',
+      awayTeam: 'Flamengo',
+      status: 'live',
+      homeScore: null,
+      awayScore: null,
+      pointsMultiplier: 2,
+    }).create()
+    const user = await UserFactory.merge({ name: 'Helvécio', emoji: '⚽' }).create()
+    await Guess.create({
+      matchId: match.id,
+      userId: user.id,
+      homeScore: 2,
+      awayScore: 1,
+    })
+
+    const { football, whatsapp } = setupFakes()
+    football.matchById.set(
+      3001,
+      fakeMatch(3001, 1, 2, 9, {
+        status: 'FINISHED',
+        score: { fullTime: { home: 2, away: 1 }, winner: 'HOME_TEAM' },
+      })
+    )
+
+    try {
+      const job = await app.container.make(SyncScoresJob)
+      await job.run()
+
+      assert.lengthOf(whatsapp.sentMessages, 1)
+      assert.match(
+        whatsapp.sentMessages[0],
+        /ℹ️ Foi rodada dobrada — pontuação multiplicada por 2\./
+      )
+      assert.match(whatsapp.sentMessages[0], /Helvécio ⚽ — 6 pts/)
+    } finally {
+      teardownFakes()
+    }
+  })
 })

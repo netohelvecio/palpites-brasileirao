@@ -70,6 +70,7 @@ export default class SyncScoresJob {
               finalAway: fresh.awayScore!,
               roundScores: preview.roundScores,
               seasonRanking: preview.seasonRanking,
+              pointsMultiplier: preview.pointsMultiplier,
             })
             await this.roundFinalizerService.finalize(match.roundId)
             finalized = true

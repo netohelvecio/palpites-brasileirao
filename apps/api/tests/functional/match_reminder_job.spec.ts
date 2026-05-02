@@ -187,4 +187,28 @@ test.group('MatchReminderJob', (group) => {
       app.container.restore(WhatsAppClient)
     }
   })
+
+  test('inclui header de rodada dobrada quando match.pointsMultiplier=2', async ({ assert }) => {
+    const season = await SeasonFactory.create()
+    const round = await RoundFactory.merge({ seasonId: season.id, status: 'open' }).create()
+    await MatchFactory.merge({
+      roundId: round.id,
+      homeTeam: 'Palmeiras',
+      awayTeam: 'Flamengo',
+      kickoffAt: DateTime.now().plus({ minutes: 28 }),
+      pointsMultiplier: 2,
+    }).create()
+
+    const whatsapp = new FakeWhatsAppClient()
+    app.container.swap(WhatsAppClient, () => whatsapp)
+    try {
+      const job = await app.container.make(MatchReminderJob)
+      await job.run()
+
+      assert.lengthOf(whatsapp.sentMessages, 1)
+      assert.match(whatsapp.sentMessages[0], /🔥 \*RODADA VALENDO EM DOBRO!\*/)
+    } finally {
+      app.container.restore(WhatsAppClient)
+    }
+  })
 })

@@ -59,6 +59,7 @@ export default class OpenRoundJob {
               homeTeam: match.homeTeam,
               awayTeam: match.awayTeam,
               kickoffAt: match.kickoffAt,
+              pointsMultiplier: match.pointsMultiplier,
             })
             await this.roundRepository.update(round, { status: RoundStatus.OPEN })
             roundOpened = true
@@ -76,6 +77,7 @@ export default class OpenRoundJob {
                   homeTeam: match.homeTeam,
                   awayTeam: match.awayTeam,
                   kickoffAt: match.kickoffAt,
+                  pointsMultiplier: match.pointsMultiplier,
                 })
               } catch (err) {
                 logger.warn(

@@ -35,6 +35,7 @@ export default class MatchReminderJob {
           homeTeam: round.match.homeTeam,
           awayTeam: round.match.awayTeam,
           kickoffAt: round.match.kickoffAt,
+          pointsMultiplier: round.match.pointsMultiplier,
         })
         await this.matchRepository.update(round.match, {
           reminder30MinSentAt: DateTime.now(),

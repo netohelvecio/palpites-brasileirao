@@ -29,4 +29,24 @@ test.group('matchReminderMessage', () => {
 
     assert.match(text, /🕘 Início: 19:30/)
   })
+
+  test('adiciona header de rodada dobrada quando pointsMultiplier=2', ({ assert }) => {
+    const text = matchReminderMessage({
+      homeTeam: 'Palmeiras',
+      awayTeam: 'Flamengo',
+      kickoffAt: DateTime.fromISO('2026-05-04T19:00:00.000Z'),
+      pointsMultiplier: 2,
+    })
+    assert.match(text, /🔥 \*RODADA VALENDO EM DOBRO!\* \(1º × 2º na tabela\)/)
+  })
+
+  test('omite header quando pointsMultiplier=1', ({ assert }) => {
+    const text = matchReminderMessage({
+      homeTeam: 'Palmeiras',
+      awayTeam: 'Flamengo',
+      kickoffAt: DateTime.fromISO('2026-05-04T19:00:00.000Z'),
+      pointsMultiplier: 1,
+    })
+    assert.notMatch(text, /RODADA VALENDO EM DOBRO/)
+  })
 })

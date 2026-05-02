@@ -34,4 +34,29 @@ test.group('templates/round_opened_dm', () => {
     })
     assert.match(text, /⏰ Início: 04\/05 às 20:00/)
   })
+
+  test('adiciona header de rodada dobrada quando pointsMultiplier=2', ({ assert }) => {
+    const text = roundOpenedDmMessage({
+      userName: 'Maria',
+      userEmoji: '🔥',
+      roundNumber: 7,
+      homeTeam: 'Flamengo',
+      awayTeam: 'Palmeiras',
+      kickoffAt: DateTime.fromISO('2026-05-04T22:00:00.000Z'),
+      pointsMultiplier: 2,
+    })
+    assert.match(text, /🔥 \*RODADA VALENDO EM DOBRO!\* \(1º × 2º na tabela\)/)
+  })
+
+  test('omite header quando pointsMultiplier=1 ou ausente', ({ assert }) => {
+    const text = roundOpenedDmMessage({
+      userName: 'Maria',
+      userEmoji: '🔥',
+      roundNumber: 7,
+      homeTeam: 'Flamengo',
+      awayTeam: 'Palmeiras',
+      kickoffAt: DateTime.fromISO('2026-05-04T22:00:00.000Z'),
+    })
+    assert.notMatch(text, /RODADA VALENDO EM DOBRO/)
+  })
 })
