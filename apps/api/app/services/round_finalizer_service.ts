@@ -12,6 +12,7 @@ import type Round from '#models/round'
 import type { RoundScoreEntry } from '#integrations/whatsapp/templates/types'
 
 export interface FinalizePreview {
+  pointsMultiplier: number
   roundScores: RoundScoreEntry[]
   seasonRanking: RankingEntry[]
 }
@@ -28,46 +29,69 @@ export default class RoundFinalizerService {
   async previewFinalize(roundId: string): Promise<FinalizePreview> {
     const { round, match } = await this.loadFinishedContext(roundId)
     const final = { finalHome: match.homeScore!, finalAway: match.awayScore! }
+    const multiplier = match.pointsMultiplier
     const guesses = await this.guessRepository.listByMatchId(match.id)
 
-    const roundScores: RoundScoreEntry[] = guesses
-      .map((g) => ({
-        userId: g.userId,
-        name: g.user.name,
-        emoji: g.user.emoji,
-        points: calculatePoints({ guessHome: g.homeScore, guessAway: g.awayScore }, final),
+    const scoredGuesses = guesses.map((g) => ({
+      guess: g,
+      result: calculatePoints(
+        { guessHome: g.homeScore, guessAway: g.awayScore },
+        final,
+        multiplier
+      ),
+    }))
+
+    const roundScores: RoundScoreEntry[] = scoredGuesses
+      .map(({ guess, result }) => ({
+        userId: guess.userId,
+        name: guess.user.name,
+        emoji: guess.user.emoji,
+        points: result.points,
       }))
       .sort((a, b) => b.points - a.points)
 
     const seasonId = round.seasonId
     const currentScores = await this.scoreRepository.listBySeasonWithUser(seasonId)
-    const byUserId = new Map(currentScores.map((s) => [s.userId, s]))
+    const userIdsInRound = new Set(scoredGuesses.map((s) => s.guess.userId))
 
     const ranking: RankingEntry[] = []
+    for (const { guess, result } of scoredGuesses) {
+      const userGuesses = await this.guessRepository.listBySeasonAndUser(seasonId, guess.userId)
+      let guessPoints = 0
+      let guessExact = 0
+      for (const ug of userGuesses) {
+        if (ug.id === guess.id) {
+          guessPoints += result.points
+          guessExact += result.isExact ? 1 : 0
+        } else {
+          guessPoints += ug.points ?? 0
+          guessExact += ug.isExact === true ? 1 : 0
+        }
+      }
+
+      const existing = await this.scoreRepository.findByUserAndSeason(guess.userId, seasonId)
+      ranking.push({
+        userId: guess.userId,
+        name: guess.user.name,
+        emoji: guess.user.emoji,
+        totalPoints: (existing?.baselinePoints ?? 0) + guessPoints,
+        exactScoresCount: (existing?.baselineExactScoresCount ?? 0) + guessExact,
+      })
+    }
+
     for (const score of currentScores) {
-      const delta = roundScores.find((rs) => rs.userId === score.userId)
-      const deltaPoints = delta?.points ?? 0
-      const deltaExact = delta?.points === 3 ? 1 : 0
+      if (userIdsInRound.has(score.userId)) continue
       ranking.push({
         userId: score.userId,
         name: score.user.name,
         emoji: score.user.emoji,
-        totalPoints: score.totalPoints + deltaPoints,
-        exactScoresCount: score.exactScoresCount + deltaExact,
-      })
-    }
-    for (const rs of roundScores) {
-      if (byUserId.has(rs.userId)) continue
-      ranking.push({
-        userId: rs.userId,
-        name: rs.name,
-        emoji: rs.emoji,
-        totalPoints: rs.points,
-        exactScoresCount: rs.points === 3 ? 1 : 0,
+        totalPoints: score.totalPoints,
+        exactScoresCount: score.exactScoresCount,
       })
     }
 
     return {
+      pointsMultiplier: multiplier,
       roundScores,
       seasonRanking: sortRanking(ranking),
     }
@@ -76,24 +100,31 @@ export default class RoundFinalizerService {
   async finalize(roundId: string): Promise<void> {
     const { round, match } = await this.loadFinishedContext(roundId)
     const final = { finalHome: match.homeScore!, finalAway: match.awayScore! }
+    const multiplier = match.pointsMultiplier
     const guesses = await this.guessRepository.listByMatchId(match.id)
 
     await db.transaction(async (trx) => {
       const affectedUserIds = new Set<string>()
       for (const guess of guesses) {
-        const points = calculatePoints(
+        const { points, isExact } = calculatePoints(
           { guessHome: guess.homeScore, guessAway: guess.awayScore },
-          final
+          final,
+          multiplier
         )
-        await this.guessRepository.update(guess, { points }, trx)
+        await this.guessRepository.update(guess, { points, isExact }, trx)
         affectedUserIds.add(guess.userId)
       }
 
       const seasonId = round.seasonId
       for (const userId of affectedUserIds) {
         const userGuesses = await this.guessRepository.listBySeasonAndUser(seasonId, userId, trx)
-        const totalPoints = userGuesses.reduce((acc, g) => acc + (g.points ?? 0), 0)
-        const exactScoresCount = userGuesses.filter((g) => g.points === 3).length
+        const guessPoints = userGuesses.reduce((acc, g) => acc + (g.points ?? 0), 0)
+        const guessExact = userGuesses.filter((g) => g.isExact === true).length
+
+        const existing = await this.scoreRepository.findByUserAndSeason(userId, seasonId, trx)
+        const totalPoints = (existing?.baselinePoints ?? 0) + guessPoints
+        const exactScoresCount = (existing?.baselineExactScoresCount ?? 0) + guessExact
+
         await this.scoreRepository.upsert(userId, seasonId, { totalPoints, exactScoresCount }, trx)
       }
 

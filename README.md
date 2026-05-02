@@ -14,6 +14,8 @@ A cada rodada, o jogo "oficial do bolão" é o confronto com maior soma de ponto
 | Vencedor (ou empate) correto | 1 |
 | Nenhum dos anteriores | 0 |
 
+Quando o jogo da rodada é o confronto direto entre **1º e 2º colocado** da tabela, a rodada vale **em dobro** (6/2/0).
+
 ## Stack
 
 - **TypeScript** (ESM) em **Node.js 24**
@@ -126,6 +128,7 @@ Entidades principais: `users`, `seasons`, `rounds`, `matches`, `guesses`, `score
 | 5 — WhatsApp inbound | ✅ concluída | Handler de DMs com auto-cadastro stateless via `/cadastro`, parser de placar (`2x1 Time`, `1x1`), upsert + reply privado + post no grupo a cada palpite. DMs personalizadas no abertura da rodada |
 | 6 — Deploy | ✅ concluída | App rodando 24/7 em VM Oracle Always Free com Caddy/Let's Encrypt, DuckDNS e backup diário do Postgres pra Object Storage. CI/CD via GitHub Actions: `ci.yml` (PRs/branches) e `deploy.yml` (push em `main` → quality → build amd64 → push GHCR → SSH deploy + migrations) compartilham `quality.yml` reusable |
 | 7 — Match Reminder T-30min | ✅ concluída | Aviso automático no grupo do WhatsApp ~30min antes do kickoff do jogo da rodada, com idempotência via flag em `matches`. Fase 1 sem escalações (Fase 2 deferida) |
+| 8 — Rodada Dobrada (1º × 2º) | ✅ concluída | Quando o pick coincide com 1º × 2º na tabela, a pontuação da rodada é multiplicada por 2 (6/2/0). Picker detecta automaticamente, jobs anunciam no WhatsApp em 3 momentos (abertura, T-30min, resultado final) |
 
 ## Licença
 

@@ -10,5 +10,6 @@ export function presentMatch(match: Match): MatchView {
     homeScore: match.homeScore,
     awayScore: match.awayScore,
     status: match.status,
+    pointsMultiplier: match.pointsMultiplier,
   }
 }

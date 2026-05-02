@@ -21,6 +21,7 @@ API para automatizar um bolão anual do Brasileirão entre ~10 amigos, hoje oper
 - Placar exato: 3 pts
 - Acertar vencedor ou empate: 1 pt
 - Qualquer outra situação: 0 pts
+- **Rodada dobrada (1º × 2º):** quando o jogo da rodada coincide com o confronto direto entre 1º e 2º colocado da tabela, a pontuação é multiplicada por 2 (6/2/0). Detectado automaticamente no momento do pick e congelado em `matches.points_multiplier`.
 
 ## Estrutura do monorepo
 
@@ -55,8 +56,8 @@ docs/
 ### Integrações externas
 
 - **football-data.org v4** (`api.football-data.org/v4`) — jogos, rodadas, tabela (`competition code=BSA`). Auth via header `X-Auth-Token`. Free tier ~10 req/min. Implementado na Fase 2.
-- **Baileys** (`@whiskeysockets/baileys`) — integração WhatsApp com **chip secundário dedicado** (não número pessoal). Planejado pra Fase 4.
-- **node-cron** — jobs recorrentes; BullMQ/Redis foi **descartado** por YAGNI (10 usuários). Planejado pra Fase 3.
+- **Baileys** (`@whiskeysockets/baileys`) — integração WhatsApp com **chip secundário dedicado** (não número pessoal). Implementado nas Fases 4 (outbound) e 5 (inbound).
+- **node-cron** — jobs recorrentes; BullMQ/Redis foi **descartado** por YAGNI (10 usuários). Implementado na Fase 3.
 
 ## Decisões arquiteturais importantes
 
@@ -67,6 +68,7 @@ docs/
 5. **Sem sessão/cookies/CSRF** — API é puramente stateless JSON. `@adonisjs/session` e `@adonisjs/shield` foram removidos do scaffolding.
 6. **Tipos de domínio no shared** — `RoundStatus`, `MatchStatus` etc. moram em `@palpites/shared` e são importados tanto pela API quanto (futuramente) pelo web.
 7. **Models estendem base schemas auto-geradas** — após `migration:run`, Adonis 7 gera `database/schema.ts` com classes base; models em `app/models/` estendem essas e só adicionam hooks, scopes, relações.
+8. **Scores = baseline + Σ(guesses)** — `scores.total_points = scores.baseline_points + Σ(guesses.points where match.status=finished)`, idem pra `exact_scores_count`. `RoundFinalizerService` re-soma os guesses e adiciona o baseline. Baseline é o canal pra "pontos de rodadas sem guesses persistidos" (ex.: import histórico antes de o sistema existir) — pra temporadas novas baseline fica em 0 e o sistema vira puro re-soma. `total_points` é coluna denormalizada mantida pelo finalize; `baseline_*` é dado de input nunca modificado pelo código.
 
 ## Preferências do usuário no projeto
 
@@ -110,6 +112,7 @@ pnpm --filter @palpites/shared lint
 | Plano 5 (5.1–5.5) | ✅ concluído | WhatsApp **inbound** — port estendida com `sendToUser`/`onMessage`, `WhatsAppInboundHandler` (auto-cadastro stateless via `/cadastro`, parser, upsert, reply privado + post no grupo); DMs personalizadas no abertura de rodada via laço no `OpenRoundJob`. Planos em `docs/superpowers/plans/2026-04-25-plan-5.*.md` |
 | Plano 6 (6.1–6.5) | ✅ concluído | Deploy — VM Oracle Always Free (x86_64, Sao Paulo) com Docker Compose (`api` + `caddy` + `postgres`), Caddy/Let's Encrypt em `palpites-brasileirao.duckdns.org`, GitHub Actions CI/CD (`quality.yml` reusable + `ci.yml` em PRs + `deploy.yml` em push na `main` → quality → build amd64 → push GHCR → SSH + migrations) e backup diário `pg_dump → Oracle Object Storage` via cron + OCI CLI. Planos em `docs/superpowers/plans/2026-04-27-plan-6.*.md` |
 | Plano 7 (7.1) | ✅ concluído | Match Reminder T-30min — `MatchReminderJob` (cron `*/5min`) posta aviso no grupo quando o jogo da rodada está em ≤30min do kickoff. Idempotência via flag `matches.reminder_30_min_sent_at`. Fase 1 sem escalações (Fase 2 deferida — fontes avaliadas no spec). Spec/plano em `docs/superpowers/specs/2026-04-30-match-reminder-30min-design.md` e `docs/superpowers/plans/2026-04-30-plan-match-reminder.md` |
+| Plano 8 (8.1–8.4) | ✅ concluído | Rodada Dobrada (1º × 2º) — picker detecta 1×2 e persiste `points_multiplier` em `matches`; `calculatePoints` aceita multiplier e retorna `{ points, isExact }`; finalizer aplica e agrega via `is_exact` (coluna nova em `guesses`). Anúncio no WhatsApp em 3 momentos: abertura, T-30min, resultado final. Admin override aceita `pointsMultiplier?` opcional no validator. Spec/planos em `docs/superpowers/specs/2026-05-02-double-points-round-design.md` e `docs/superpowers/plans/2026-05-02-plan-8.*.md` |
 
 ## Produção
 

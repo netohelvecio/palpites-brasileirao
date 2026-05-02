@@ -2,6 +2,7 @@ import { test } from '@japa/runner'
 import app from '@adonisjs/core/services/app'
 import testUtils from '@adonisjs/core/services/test_utils'
 import FootballDataClient from '#integrations/football_data/client'
+import Match from '#models/match'
 import { SeasonFactory } from '#factories/season_factory'
 import { FakeFootballDataClient, fakeStandings, fakeMatch } from '#tests/helpers/football_data_mock'
 
@@ -107,6 +108,56 @@ test.group('Seasons', (group) => {
       assert.equal(res.body().created, false)
       assert.equal(res.body().skipped, false)
       assert.match(res.body().reason, /nenhum jogo/i)
+    } finally {
+      app.container.restore(FootballDataClient)
+    }
+  })
+
+  test('POST /seasons/:id/sync grava pointsMultiplier=2 quando pick é 1ºx2º', async ({
+    client,
+    assert,
+  }) => {
+    const season = await SeasonFactory.merge({
+      year: 2026,
+      externalCompetitionCode: 'BSA',
+    }).create()
+
+    const fake = new FakeFootballDataClient()
+    fake.standings = fakeStandings(7, 2026, { 10: 30, 20: 25, 30: 20 })
+    fake.matchesByMatchday.set('2026:7', [fakeMatch(901, 10, 20, 7), fakeMatch(902, 30, 40, 7)])
+
+    app.container.swap(FootballDataClient, () => fake as any)
+    try {
+      const res = await client.post(`/api/v1/seasons/${season.id}/sync`).headers(HEADERS)
+      res.assertStatus(200)
+      assert.equal(res.body().created, true)
+
+      const match = await Match.query().where('external_id', 901).firstOrFail()
+      assert.equal(match.pointsMultiplier, 2)
+    } finally {
+      app.container.restore(FootballDataClient)
+    }
+  })
+
+  test('POST /seasons/:id/sync grava pointsMultiplier=1 quando pick não é 1ºx2º', async ({
+    client,
+    assert,
+  }) => {
+    const season = await SeasonFactory.merge({
+      year: 2026,
+      externalCompetitionCode: 'BSA',
+    }).create()
+
+    const fake = new FakeFootballDataClient()
+    fake.standings = fakeStandings(8, 2026, { 10: 30, 20: 25, 30: 20, 40: 15 })
+    fake.matchesByMatchday.set('2026:8', [fakeMatch(901, 10, 30, 8), fakeMatch(902, 20, 40, 8)])
+
+    app.container.swap(FootballDataClient, () => fake as any)
+    try {
+      await client.post(`/api/v1/seasons/${season.id}/sync`).headers(HEADERS)
+
+      const match = await Match.query().where('external_id', 901).firstOrFail()
+      assert.equal(match.pointsMultiplier, 1)
     } finally {
       app.container.restore(FootballDataClient)
     }

@@ -14,6 +14,7 @@ export class GuessSchema extends BaseModel {
     'homeScore',
     'id',
     'isDeleted',
+    'isExact',
     'matchId',
     'points',
     'updatedAt',
@@ -30,6 +31,8 @@ export class GuessSchema extends BaseModel {
   declare id: string
   @column()
   declare isDeleted: boolean
+  @column()
+  declare isExact: boolean | null
   @column()
   declare matchId: string
   @column()
@@ -51,6 +54,7 @@ export class MatchSchema extends BaseModel {
     'id',
     'isDeleted',
     'kickoffAt',
+    'pointsMultiplier',
     'reminder30MinSentAt',
     'roundId',
     'status',
@@ -75,6 +79,8 @@ export class MatchSchema extends BaseModel {
   declare isDeleted: boolean
   @column.dateTime()
   declare kickoffAt: DateTime
+  @column()
+  declare pointsMultiplier: number
   @column.dateTime()
   declare reminder30MinSentAt: DateTime | null
   @column()
@@ -114,6 +120,8 @@ export class RoundSchema extends BaseModel {
 
 export class ScoreSchema extends BaseModel {
   static $columns = [
+    'baselineExactScoresCount',
+    'baselinePoints',
     'exactScoresCount',
     'id',
     'isDeleted',
@@ -123,6 +131,10 @@ export class ScoreSchema extends BaseModel {
     'userId',
   ] as const
   $columns = ScoreSchema.$columns
+  @column()
+  declare baselineExactScoresCount: number
+  @column()
+  declare baselinePoints: number
   @column()
   declare exactScoresCount: number
   @column({ isPrimary: true })

@@ -15,6 +15,7 @@ export interface MatchView {
   homeScore: number | null
   awayScore: number | null
   status: MatchStatus
+  pointsMultiplier: number
 }
 
 export interface GuessListItem {

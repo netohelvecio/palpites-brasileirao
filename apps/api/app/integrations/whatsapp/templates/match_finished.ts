@@ -9,6 +9,7 @@ export interface MatchFinishedInput {
   finalAway: number
   roundScores: RoundScoreEntry[]
   seasonRanking: RankingEntry[]
+  pointsMultiplier?: number
 }
 
 function ptsLabel(n: number): string {
@@ -21,6 +22,10 @@ function exactScoresLabel(n: number): string {
 
 export function matchFinishedMessage(input: MatchFinishedInput): string {
   const final = `🏁 Final: ${input.homeTeam} ${input.finalHome} x ${input.finalAway} ${input.awayTeam}`
+  const disclaimer =
+    (input.pointsMultiplier ?? 1) > 1
+      ? 'ℹ️ Foi rodada dobrada — pontuação multiplicada por 2.'
+      : null
 
   const roundLines = input.roundScores.map((e) => `${e.name} ${e.emoji} — ${ptsLabel(e.points)}`)
   const roundBlock = `Pontuação da rodada ${input.roundNumber}:\n${roundLines.join('\n')}`
@@ -31,5 +36,8 @@ export function matchFinishedMessage(input: MatchFinishedInput): string {
   )
   const rankingBlock = `🏆 Ranking da temporada:\n${rankingLines.join('\n')}`
 
-  return [final, roundBlock, rankingBlock].join('\n\n')
+  const blocks = disclaimer
+    ? [final, disclaimer, roundBlock, rankingBlock]
+    : [final, roundBlock, rankingBlock]
+  return blocks.join('\n\n')
 }

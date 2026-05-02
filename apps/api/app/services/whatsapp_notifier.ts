@@ -51,6 +51,7 @@ export default class WhatsAppNotifier {
     homeTeam: string
     awayTeam: string
     kickoffAt: RoundOpenedDmInput['kickoffAt']
+    pointsMultiplier?: number
   }): Promise<void> {
     const text = roundOpenedDmMessage({
       userName: args.user.name,
@@ -59,6 +60,7 @@ export default class WhatsAppNotifier {
       homeTeam: args.homeTeam,
       awayTeam: args.awayTeam,
       kickoffAt: args.kickoffAt,
+      pointsMultiplier: args.pointsMultiplier,
     })
     await this.client.sendToUser(args.user.whatsappNumber, text)
   }

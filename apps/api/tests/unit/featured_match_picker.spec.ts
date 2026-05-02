@@ -24,7 +24,7 @@ function fixture(id: number, homeId: number, awayId: number): FixtureCandidate {
   }
 }
 
-test.group('FeaturedMatchPicker', () => {
+test.group('FeaturedMatchPicker — escolha do pick', () => {
   test('escolhe o confronto com maior soma de pontos dos dois times', ({ assert }) => {
     const r = pickFeaturedMatch(
       [fixture(100, 3, 4), fixture(101, 1, 2), fixture(102, 5, 1)],
@@ -68,5 +68,49 @@ test.group('FeaturedMatchPicker', () => {
     const r = pickFeaturedMatch([fixture(500, 1, 2), fixture(501, 3, 4)], [])
     assert.equal(r.ok, true)
     if (r.ok) assert.equal(r.match.externalId, 500)
+  })
+})
+
+test.group('FeaturedMatchPicker — pointsMultiplier (rodada dobrada)', () => {
+  test('pick é 1º × 2º (home=1, away=2) → multiplier=2', ({ assert }) => {
+    const r = pickFeaturedMatch([fixture(101, 1, 2), fixture(102, 3, 4)], STANDINGS)
+    assert.equal(r.ok, true)
+    if (r.ok) {
+      assert.equal(r.match.externalId, 101)
+      assert.equal(r.pointsMultiplier, 2)
+    }
+  })
+
+  test('pick é 1º × 2º invertido (home=2, away=1) → multiplier=2', ({ assert }) => {
+    const r = pickFeaturedMatch([fixture(101, 2, 1), fixture(102, 3, 4)], STANDINGS)
+    assert.equal(r.ok, true)
+    if (r.ok) {
+      assert.equal(r.match.externalId, 101)
+      assert.equal(r.pointsMultiplier, 2)
+    }
+  })
+
+  test('pick é 1º × 3º → multiplier=1', ({ assert }) => {
+    const r = pickFeaturedMatch([fixture(101, 1, 3)], STANDINGS)
+    assert.equal(r.ok, true)
+    if (r.ok) assert.equal(r.pointsMultiplier, 1)
+  })
+
+  test('pick é 2º × 3º → multiplier=1', ({ assert }) => {
+    const r = pickFeaturedMatch([fixture(101, 2, 3)], STANDINGS)
+    assert.equal(r.ok, true)
+    if (r.ok) assert.equal(r.pointsMultiplier, 1)
+  })
+
+  test('standings com menos de 2 entradas → multiplier=1 (fallback seguro)', ({ assert }) => {
+    const r = pickFeaturedMatch([fixture(101, 1, 2)], [{ teamId: 1, points: 5 }])
+    assert.equal(r.ok, true)
+    if (r.ok) assert.equal(r.pointsMultiplier, 1)
+  })
+
+  test('standings vazio → multiplier=1', ({ assert }) => {
+    const r = pickFeaturedMatch([fixture(101, 1, 2)], [])
+    assert.equal(r.ok, true)
+    if (r.ok) assert.equal(r.pointsMultiplier, 1)
   })
 })

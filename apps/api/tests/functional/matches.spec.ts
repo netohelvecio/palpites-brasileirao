@@ -2,6 +2,7 @@ import { test } from '@japa/runner'
 import app from '@adonisjs/core/services/app'
 import testUtils from '@adonisjs/core/services/test_utils'
 import FootballDataClient from '#integrations/football_data/client'
+import Match from '#models/match'
 import { RoundFactory } from '#factories/round_factory'
 import { MatchFactory } from '#factories/match_factory'
 import { FakeFootballDataClient, fakeMatch } from '#tests/helpers/football_data_mock'
@@ -21,6 +22,55 @@ test.group('Matches', (group) => {
     })
     res.assertStatus(200)
     assert.equal(res.body().homeTeam, 'Flamengo')
+  })
+
+  test('PUT /rounds/:roundId/match aceita pointsMultiplier no payload', async ({
+    client,
+    assert,
+  }) => {
+    const round = await RoundFactory.with('season').create()
+    const res = await client.put(`/api/v1/rounds/${round.id}/match`).headers(HEADERS).json({
+      externalId: 9999,
+      homeTeam: 'A',
+      awayTeam: 'B',
+      kickoffAt: '2026-04-20T20:00:00.000Z',
+      pointsMultiplier: 2,
+    })
+    res.assertStatus(200)
+
+    const match = await Match.query().where('external_id', 9999).firstOrFail()
+    assert.equal(match.pointsMultiplier, 2)
+  })
+
+  test('PUT /rounds/:roundId/match sem pointsMultiplier → default 1', async ({
+    client,
+    assert,
+  }) => {
+    const round = await RoundFactory.with('season').create()
+    const res = await client.put(`/api/v1/rounds/${round.id}/match`).headers(HEADERS).json({
+      externalId: 8888,
+      homeTeam: 'X',
+      awayTeam: 'Y',
+      kickoffAt: '2026-04-20T20:00:00.000Z',
+    })
+    res.assertStatus(200)
+
+    const match = await Match.query().where('external_id', 8888).firstOrFail()
+    assert.equal(match.pointsMultiplier, 1)
+  })
+
+  test('PUT /rounds/:roundId/match com pointsMultiplier inválido (>10) → 422', async ({
+    client,
+  }) => {
+    const round = await RoundFactory.with('season').create()
+    const res = await client.put(`/api/v1/rounds/${round.id}/match`).headers(HEADERS).json({
+      externalId: 7777,
+      homeTeam: 'X',
+      awayTeam: 'Y',
+      kickoffAt: '2026-04-20T20:00:00.000Z',
+      pointsMultiplier: 99,
+    })
+    res.assertStatus(422)
   })
 
   test('PUT /rounds/:roundId/match sobrescreve existente', async ({ client, assert }) => {
@@ -50,6 +100,18 @@ test.group('Matches', (group) => {
     const round = await RoundFactory.with('season').create()
     const res = await client.get(`/api/v1/rounds/${round.id}/match`).headers(HEADERS)
     res.assertStatus(404)
+  })
+
+  test('GET /rounds/:roundId/match expõe pointsMultiplier', async ({ client, assert }) => {
+    const round = await RoundFactory.with('season').create()
+    await MatchFactory.merge({
+      roundId: round.id,
+      pointsMultiplier: 2,
+    }).create()
+
+    const res = await client.get(`/api/v1/rounds/${round.id}/match`).headers(HEADERS)
+    res.assertStatus(200)
+    assert.equal(res.body().pointsMultiplier, 2)
   })
 
   test('POST /rounds/:roundId/match/refresh-score atualiza placar e status', async ({

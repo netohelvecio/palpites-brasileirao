@@ -53,4 +53,35 @@ test.group('templates/match_finished', () => {
     assert.match(text, /X 🎯 — 1 pt$/m)
     assert.match(text, /1\. X 🎯 — 1 pt \(0 placares exatos\)/)
   })
+
+  test('adiciona disclaimer logo após o placar quando pointsMultiplier=2', ({ assert }) => {
+    const text = matchFinishedMessage({
+      roundNumber: 5,
+      homeTeam: 'A',
+      awayTeam: 'B',
+      finalHome: 2,
+      finalAway: 1,
+      roundScores: [{ userId: 'u1', name: 'Maria', emoji: '🔥', points: 6 }],
+      seasonRanking: [
+        { userId: 'u1', name: 'Maria', emoji: '🔥', totalPoints: 6, exactScoresCount: 1 },
+      ],
+      pointsMultiplier: 2,
+    })
+    assert.match(text, /ℹ️ Foi rodada dobrada — pontuação multiplicada por 2\./)
+  })
+
+  test('omite disclaimer quando pointsMultiplier=1 ou ausente', ({ assert }) => {
+    const text = matchFinishedMessage({
+      roundNumber: 5,
+      homeTeam: 'A',
+      awayTeam: 'B',
+      finalHome: 2,
+      finalAway: 1,
+      roundScores: [{ userId: 'u1', name: 'Maria', emoji: '🔥', points: 3 }],
+      seasonRanking: [
+        { userId: 'u1', name: 'Maria', emoji: '🔥', totalPoints: 3, exactScoresCount: 1 },
+      ],
+    })
+    assert.notMatch(text, /Foi rodada dobrada/)
+  })
 })
