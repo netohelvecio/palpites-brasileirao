@@ -51,6 +51,7 @@ export class MatchSchema extends BaseModel {
     'id',
     'isDeleted',
     'kickoffAt',
+    'reminder30MinSentAt',
     'roundId',
     'status',
     'updatedAt',
@@ -74,6 +75,8 @@ export class MatchSchema extends BaseModel {
   declare isDeleted: boolean
   @column.dateTime()
   declare kickoffAt: DateTime
+  @column.dateTime()
+  declare reminder30MinSentAt: DateTime | null
   @column()
   declare roundId: string
   @column()

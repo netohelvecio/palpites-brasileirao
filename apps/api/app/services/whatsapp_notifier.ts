@@ -20,6 +20,10 @@ import {
   guessRegisteredGroupMessage,
   type GuessRegisteredGroupInput,
 } from '#integrations/whatsapp/templates/guess_registered_group'
+import {
+  matchReminderMessage,
+  type MatchReminderInput,
+} from '#integrations/whatsapp/templates/match_reminder'
 
 @inject()
 export default class WhatsAppNotifier {
@@ -61,5 +65,9 @@ export default class WhatsAppNotifier {
 
   async notifyGuessRegistered(input: GuessRegisteredGroupInput): Promise<void> {
     await this.client.sendToGroup(guessRegisteredGroupMessage(input))
+  }
+
+  async notifyMatchReminder(input: MatchReminderInput): Promise<void> {
+    await this.client.sendToGroup(matchReminderMessage(input))
   }
 }
