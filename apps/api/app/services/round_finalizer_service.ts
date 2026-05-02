@@ -12,6 +12,7 @@ import type Round from '#models/round'
 import type { RoundScoreEntry } from '#integrations/whatsapp/templates/types'
 
 export interface FinalizePreview {
+  pointsMultiplier: number
   roundScores: RoundScoreEntry[]
   seasonRanking: RankingEntry[]
 }
@@ -28,16 +29,30 @@ export default class RoundFinalizerService {
   async previewFinalize(roundId: string): Promise<FinalizePreview> {
     const { round, match } = await this.loadFinishedContext(roundId)
     const final = { finalHome: match.homeScore!, finalAway: match.awayScore! }
+    const multiplier = match.pointsMultiplier
     const guesses = await this.guessRepository.listByMatchId(match.id)
 
-    const roundScores: RoundScoreEntry[] = guesses
-      .map((g) => ({
-        userId: g.userId,
-        name: g.user.name,
-        emoji: g.user.emoji,
-        points: calculatePoints({ guessHome: g.homeScore, guessAway: g.awayScore }, final),
+    const scoredGuesses = guesses.map((g) => ({
+      guess: g,
+      result: calculatePoints(
+        { guessHome: g.homeScore, guessAway: g.awayScore },
+        final,
+        multiplier
+      ),
+    }))
+
+    const roundScores: RoundScoreEntry[] = scoredGuesses
+      .map(({ guess, result }) => ({
+        userId: guess.userId,
+        name: guess.user.name,
+        emoji: guess.user.emoji,
+        points: result.points,
       }))
       .sort((a, b) => b.points - a.points)
+
+    const exactByUser = new Map(
+      scoredGuesses.map(({ guess, result }) => [guess.userId, result.isExact])
+    )
 
     const seasonId = round.seasonId
     const currentScores = await this.scoreRepository.listBySeasonWithUser(seasonId)
@@ -47,7 +62,7 @@ export default class RoundFinalizerService {
     for (const score of currentScores) {
       const delta = roundScores.find((rs) => rs.userId === score.userId)
       const deltaPoints = delta?.points ?? 0
-      const deltaExact = delta?.points === 3 ? 1 : 0
+      const deltaExact = exactByUser.get(score.userId) ? 1 : 0
       ranking.push({
         userId: score.userId,
         name: score.user.name,
@@ -63,11 +78,12 @@ export default class RoundFinalizerService {
         name: rs.name,
         emoji: rs.emoji,
         totalPoints: rs.points,
-        exactScoresCount: rs.points === 3 ? 1 : 0,
+        exactScoresCount: exactByUser.get(rs.userId) ? 1 : 0,
       })
     }
 
     return {
+      pointsMultiplier: multiplier,
       roundScores,
       seasonRanking: sortRanking(ranking),
     }
@@ -76,16 +92,18 @@ export default class RoundFinalizerService {
   async finalize(roundId: string): Promise<void> {
     const { round, match } = await this.loadFinishedContext(roundId)
     const final = { finalHome: match.homeScore!, finalAway: match.awayScore! }
+    const multiplier = match.pointsMultiplier
     const guesses = await this.guessRepository.listByMatchId(match.id)
 
     await db.transaction(async (trx) => {
       const affectedUserIds = new Set<string>()
       for (const guess of guesses) {
-        const points = calculatePoints(
+        const { points, isExact } = calculatePoints(
           { guessHome: guess.homeScore, guessAway: guess.awayScore },
-          final
+          final,
+          multiplier
         )
-        await this.guessRepository.update(guess, { points }, trx)
+        await this.guessRepository.update(guess, { points, isExact }, trx)
         affectedUserIds.add(guess.userId)
       }
 
@@ -93,7 +111,7 @@ export default class RoundFinalizerService {
       for (const userId of affectedUserIds) {
         const userGuesses = await this.guessRepository.listBySeasonAndUser(seasonId, userId, trx)
         const totalPoints = userGuesses.reduce((acc, g) => acc + (g.points ?? 0), 0)
-        const exactScoresCount = userGuesses.filter((g) => g.points === 3).length
+        const exactScoresCount = userGuesses.filter((g) => g.isExact === true).length
         await this.scoreRepository.upsert(userId, seasonId, { totalPoints, exactScoresCount }, trx)
       }
 

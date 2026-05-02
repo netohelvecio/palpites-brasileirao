@@ -102,6 +102,18 @@ test.group('Matches', (group) => {
     res.assertStatus(404)
   })
 
+  test('GET /rounds/:roundId/match expõe pointsMultiplier', async ({ client, assert }) => {
+    const round = await RoundFactory.with('season').create()
+    await MatchFactory.merge({
+      roundId: round.id,
+      pointsMultiplier: 2,
+    }).create()
+
+    const res = await client.get(`/api/v1/rounds/${round.id}/match`).headers(HEADERS)
+    res.assertStatus(200)
+    assert.equal(res.body().pointsMultiplier, 2)
+  })
+
   test('POST /rounds/:roundId/match/refresh-score atualiza placar e status', async ({
     client,
     assert,

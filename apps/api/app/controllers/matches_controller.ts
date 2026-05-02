@@ -4,6 +4,7 @@ import { MatchStatus } from '@palpites/shared'
 import MatchRepository from '#repositories/match_repository'
 import RoundRepository from '#repositories/round_repository'
 import RefreshMatchService from '#services/refresh_match_service'
+import { presentMatch } from '#presenters/match_presenter'
 import { upsertMatchValidator } from '#validators/match_validator'
 
 @inject()
@@ -17,7 +18,7 @@ export default class MatchesController {
   async show({ params, response }: HttpContext) {
     const match = await this.matchRepository.findByRoundId(params.roundId)
     if (!match) return response.notFound({ error: 'match not found' })
-    return response.ok(match)
+    return response.ok(presentMatch(match))
   }
 
   async upsert({ params, request, response }: HttpContext) {
@@ -37,7 +38,7 @@ export default class MatchesController {
         awayScore: null,
         pointsMultiplier,
       })
-      return response.ok(existing)
+      return response.ok(presentMatch(existing))
     }
 
     const match = await this.matchRepository.create({
@@ -49,7 +50,7 @@ export default class MatchesController {
       status: MatchStatus.SCHEDULED,
       pointsMultiplier,
     })
-    return response.ok(match)
+    return response.ok(presentMatch(match))
   }
 
   async refreshScore({ params, response }: HttpContext) {
