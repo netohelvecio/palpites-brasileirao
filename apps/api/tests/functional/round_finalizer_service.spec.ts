@@ -313,4 +313,104 @@ test.group('RoundFinalizerService', (group) => {
       assert.equal(persisted!.exactScoresCount, previewEntry.exactScoresCount)
     }
   })
+
+  test('finalize preserva baseline manual em scores quando guesses históricos não existem', async ({
+    assert,
+  }) => {
+    const season = await SeasonFactory.create()
+    const round = await RoundFactory.merge({ seasonId: season.id, status: 'closed' }).create()
+    const match = await MatchFactory.merge({
+      roundId: round.id,
+      status: 'finished',
+      homeScore: 0,
+      awayScore: 1,
+      pointsMultiplier: 2,
+    }).create()
+    const user = await UserFactory.create()
+    await Guess.create({ matchId: match.id, userId: user.id, homeScore: 0, awayScore: 1 })
+
+    await Score.create({
+      userId: user.id,
+      seasonId: season.id,
+      totalPoints: 6,
+      exactScoresCount: 1,
+    })
+
+    const finalizer = await app.container.make(RoundFinalizerService)
+    await finalizer.finalize(round.id)
+
+    const score = await Score.query()
+      .where('user_id', user.id)
+      .where('season_id', season.id)
+      .first()
+    assert.equal(score!.totalPoints, 12)
+    assert.equal(score!.exactScoresCount, 2)
+  })
+
+  test('previewFinalize === finalize com baseline manual em scores', async ({ assert }) => {
+    const season = await SeasonFactory.create()
+    const round = await RoundFactory.merge({ seasonId: season.id, status: 'closed' }).create()
+    const match = await MatchFactory.merge({
+      roundId: round.id,
+      status: 'finished',
+      homeScore: 0,
+      awayScore: 1,
+      pointsMultiplier: 2,
+    }).create()
+    const user = await UserFactory.create()
+    await Guess.create({ matchId: match.id, userId: user.id, homeScore: 0, awayScore: 1 })
+
+    await Score.create({
+      userId: user.id,
+      seasonId: season.id,
+      totalPoints: 6,
+      exactScoresCount: 1,
+    })
+
+    const finalizer = await app.container.make(RoundFinalizerService)
+    const preview = await finalizer.previewFinalize(round.id)
+    await finalizer.finalize(round.id)
+
+    const persisted = await Score.query()
+      .where('user_id', user.id)
+      .where('season_id', season.id)
+      .first()
+    const previewEntry = preview.seasonRanking.find((e) => e.userId === user.id)!
+    assert.equal(persisted!.totalPoints, previewEntry.totalPoints)
+    assert.equal(persisted!.exactScoresCount, previewEntry.exactScoresCount)
+  })
+
+  test('finalize idempotente preservando baseline manual: 2x produz mesmo resultado', async ({
+    assert,
+  }) => {
+    const season = await SeasonFactory.create()
+    const round = await RoundFactory.merge({ seasonId: season.id, status: 'closed' }).create()
+    const match = await MatchFactory.merge({
+      roundId: round.id,
+      status: 'finished',
+      homeScore: 0,
+      awayScore: 1,
+      pointsMultiplier: 2,
+    }).create()
+    const user = await UserFactory.create()
+    await Guess.create({ matchId: match.id, userId: user.id, homeScore: 0, awayScore: 1 })
+
+    await Score.create({
+      userId: user.id,
+      seasonId: season.id,
+      totalPoints: 6,
+      exactScoresCount: 1,
+    })
+
+    const finalizer = await app.container.make(RoundFinalizerService)
+    await finalizer.finalize(round.id)
+    await finalizer.finalize(round.id)
+
+    const score = await Score.query()
+      .where('user_id', user.id)
+      .where('season_id', season.id)
+      .first()
+    assert.equal(score!.totalPoints, 12)
+    assert.equal(score!.exactScoresCount, 2)
+  })
 })

@@ -36,6 +36,7 @@ export default class GuessRepository extends BaseRepository<typeof Guess> {
         homeScore: payload.homeScore,
         awayScore: payload.awayScore,
         points: null,
+        isExact: null,
       })
       await existing.save()
       return existing
@@ -46,6 +47,7 @@ export default class GuessRepository extends BaseRepository<typeof Guess> {
       homeScore: payload.homeScore,
       awayScore: payload.awayScore,
       points: null,
+      isExact: null,
     })
   }
 

@@ -11,6 +11,13 @@ export default class ScoreRepository extends BaseRepository<typeof Score> {
     return Score.query().where('season_id', seasonId).preload('user')
   }
 
+  findByUserAndSeason(userId: string, seasonId: string, trx?: TransactionClientContract) {
+    return Score.query({ client: trx })
+      .where('user_id', userId)
+      .where('season_id', seasonId)
+      .first()
+  }
+
   async upsert(
     userId: string,
     seasonId: string,

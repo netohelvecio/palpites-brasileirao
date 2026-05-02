@@ -50,9 +50,16 @@ export default class RoundFinalizerService {
       }))
       .sort((a, b) => b.points - a.points)
 
-    const exactByUser = new Map(
-      scoredGuesses.map(({ guess, result }) => [guess.userId, result.isExact])
-    )
+    const deltaByUser = new Map<string, { points: number; exact: number }>()
+    for (const { guess, result } of scoredGuesses) {
+      const oldPoints = guess.points ?? 0
+      const oldExact = guess.isExact === true ? 1 : 0
+      const newExact = result.isExact ? 1 : 0
+      deltaByUser.set(guess.userId, {
+        points: result.points - oldPoints,
+        exact: newExact - oldExact,
+      })
+    }
 
     const seasonId = round.seasonId
     const currentScores = await this.scoreRepository.listBySeasonWithUser(seasonId)
@@ -60,25 +67,24 @@ export default class RoundFinalizerService {
 
     const ranking: RankingEntry[] = []
     for (const score of currentScores) {
-      const delta = roundScores.find((rs) => rs.userId === score.userId)
-      const deltaPoints = delta?.points ?? 0
-      const deltaExact = exactByUser.get(score.userId) ? 1 : 0
+      const delta = deltaByUser.get(score.userId) ?? { points: 0, exact: 0 }
       ranking.push({
         userId: score.userId,
         name: score.user.name,
         emoji: score.user.emoji,
-        totalPoints: score.totalPoints + deltaPoints,
-        exactScoresCount: score.exactScoresCount + deltaExact,
+        totalPoints: score.totalPoints + delta.points,
+        exactScoresCount: score.exactScoresCount + delta.exact,
       })
     }
-    for (const rs of roundScores) {
-      if (byUserId.has(rs.userId)) continue
+    for (const { guess } of scoredGuesses) {
+      if (byUserId.has(guess.userId)) continue
+      const delta = deltaByUser.get(guess.userId)!
       ranking.push({
-        userId: rs.userId,
-        name: rs.name,
-        emoji: rs.emoji,
-        totalPoints: rs.points,
-        exactScoresCount: exactByUser.get(rs.userId) ? 1 : 0,
+        userId: guess.userId,
+        name: guess.user.name,
+        emoji: guess.user.emoji,
+        totalPoints: delta.points,
+        exactScoresCount: delta.exact,
       })
     }
 
@@ -96,22 +102,30 @@ export default class RoundFinalizerService {
     const guesses = await this.guessRepository.listByMatchId(match.id)
 
     await db.transaction(async (trx) => {
-      const affectedUserIds = new Set<string>()
+      const deltaByUser = new Map<string, { points: number; exact: number }>()
+
       for (const guess of guesses) {
-        const { points, isExact } = calculatePoints(
+        const oldPoints = guess.points ?? 0
+        const oldExact = guess.isExact === true ? 1 : 0
+        const { points: newPoints, isExact: newIsExact } = calculatePoints(
           { guessHome: guess.homeScore, guessAway: guess.awayScore },
           final,
           multiplier
         )
-        await this.guessRepository.update(guess, { points, isExact }, trx)
-        affectedUserIds.add(guess.userId)
+        await this.guessRepository.update(guess, { points: newPoints, isExact: newIsExact }, trx)
+
+        const newExact = newIsExact ? 1 : 0
+        const acc = deltaByUser.get(guess.userId) ?? { points: 0, exact: 0 }
+        acc.points += newPoints - oldPoints
+        acc.exact += newExact - oldExact
+        deltaByUser.set(guess.userId, acc)
       }
 
       const seasonId = round.seasonId
-      for (const userId of affectedUserIds) {
-        const userGuesses = await this.guessRepository.listBySeasonAndUser(seasonId, userId, trx)
-        const totalPoints = userGuesses.reduce((acc, g) => acc + (g.points ?? 0), 0)
-        const exactScoresCount = userGuesses.filter((g) => g.isExact === true).length
+      for (const [userId, delta] of deltaByUser) {
+        const existing = await this.scoreRepository.findByUserAndSeason(userId, seasonId, trx)
+        const totalPoints = (existing?.totalPoints ?? 0) + delta.points
+        const exactScoresCount = (existing?.exactScoresCount ?? 0) + delta.exact
         await this.scoreRepository.upsert(userId, seasonId, { totalPoints, exactScoresCount }, trx)
       }
 
