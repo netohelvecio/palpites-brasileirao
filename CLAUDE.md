@@ -68,6 +68,7 @@ docs/
 5. **Sem sessão/cookies/CSRF** — API é puramente stateless JSON. `@adonisjs/session` e `@adonisjs/shield` foram removidos do scaffolding.
 6. **Tipos de domínio no shared** — `RoundStatus`, `MatchStatus` etc. moram em `@palpites/shared` e são importados tanto pela API quanto (futuramente) pelo web.
 7. **Models estendem base schemas auto-geradas** — após `migration:run`, Adonis 7 gera `database/schema.ts` com classes base; models em `app/models/` estendem essas e só adicionam hooks, scopes, relações.
+8. **Scores agregadas por delta** — `RoundFinalizerService.finalize` e `previewFinalize` aplicam `delta = (newPoints - oldPoints)` por palpite em cima do `scores` existente; **não** re-somam `guesses.points`. Permite baseline manual em `scores` (rodadas históricas sem guesses persistidos) e mantém idempotência. Implica que `upsertByUserAndMatch` zera `points` E `is_exact` juntos pra não inflar o delta no próximo finalize.
 
 ## Preferências do usuário no projeto
 
