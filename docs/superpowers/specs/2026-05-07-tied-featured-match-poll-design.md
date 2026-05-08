@@ -392,8 +392,6 @@ if (matchEscolher) {
 ```
 🎯 *Rodada N — jogo definido pelo admin:*
 Time A x Time B
-
-Pontuação na resposta da rodada.
 ```
 
 ## Repositórios novos

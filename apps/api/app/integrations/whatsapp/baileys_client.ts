@@ -95,6 +95,20 @@ export default class BaileysClient extends WhatsAppClient {
     await this.socket.sendMessage(jid, { text })
   }
 
+  async sendPollToGroup(question: string, options: string[]): Promise<{ messageId: string }> {
+    const jid = env.get('WHATSAPP_GROUP_JID')
+    if (!jid) {
+      throw new Error('WHATSAPP_GROUP_JID não configurado')
+    }
+    if (!this.socket || this.state !== 'open') {
+      throw new Error('BaileysClient: socket não conectado')
+    }
+    const result = await this.socket.sendMessage(jid, {
+      poll: { name: question, values: options, selectableCount: 1 },
+    })
+    return { messageId: result?.key?.id ?? '' }
+  }
+
   onMessage(handler: IncomingMessageHandler): void {
     this.messageHandler = handler
   }

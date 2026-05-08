@@ -1,7 +1,13 @@
 import { inject } from '@adonisjs/core'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
-import { MatchStatus, RoundStatus, type MatchView, type MatchCandidateView } from '@palpites/shared'
+import {
+  MatchStatus,
+  PickKind,
+  RoundStatus,
+  type MatchCandidateView,
+  type MatchView,
+} from '@palpites/shared'
 import FootballDataClient from '#integrations/football_data/client'
 import {
   toFixtureCandidate,
@@ -94,7 +100,7 @@ export default class FixturesSyncService {
       }
     }
 
-    if (pick.kind === 'unique') {
+    if (pick.kind === PickKind.UNIQUE) {
       const created = await db.transaction(async (trx) => {
         const round =
           existingRound ??
@@ -126,7 +132,7 @@ export default class FixturesSyncService {
       }
     }
 
-    // pick.kind === 'tie'
+    // pick.kind === PickKind.TIE
     await db.transaction(async (trx) => {
       let round = existingRound
       if (!round) {

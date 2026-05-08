@@ -1,3 +1,5 @@
+import { PickKind } from '@palpites/shared'
+
 export interface FixtureCandidate {
   externalId: number
   homeTeamId: number
@@ -19,8 +21,8 @@ export interface TieCandidate {
 }
 
 export type PickResult =
-  | { ok: true; kind: 'unique'; match: FixtureCandidate; pointsMultiplier: number }
-  | { ok: true; kind: 'tie'; candidates: TieCandidate[] }
+  | { ok: true; kind: typeof PickKind.UNIQUE; match: FixtureCandidate; pointsMultiplier: number }
+  | { ok: true; kind: typeof PickKind.TIE; candidates: TieCandidate[] }
   | { ok: false; reason: string }
 
 export function pickFeaturedMatch(
@@ -52,11 +54,11 @@ export function pickFeaturedMatch(
   // Tie-break 1×2: se algum empatado no top é 1×2, ele vence sem enquete.
   const oneVsTwo = topGroup.find((s) => isOneVsTwo(s.match))
   if (oneVsTwo) {
-    return { ok: true, kind: 'unique', match: oneVsTwo.match, pointsMultiplier: 2 }
+    return { ok: true, kind: PickKind.UNIQUE, match: oneVsTwo.match, pointsMultiplier: 2 }
   }
 
   if (topGroup.length === 1) {
-    return { ok: true, kind: 'unique', match: topGroup[0].match, pointsMultiplier: 1 }
+    return { ok: true, kind: PickKind.UNIQUE, match: topGroup[0].match, pointsMultiplier: 1 }
   }
 
   const sorted = [...topGroup].sort(
@@ -64,7 +66,7 @@ export function pickFeaturedMatch(
   )
   return {
     ok: true,
-    kind: 'tie',
+    kind: PickKind.TIE,
     candidates: sorted.map((s, idx) => ({
       match: s.match,
       pointsSum: s.pointsSum,

@@ -8,6 +8,10 @@ export interface IncomingMessage {
 
 export type IncomingMessageHandler = (msg: IncomingMessage) => Promise<void>
 
+export interface PollSendResult {
+  messageId: string
+}
+
 export default abstract class WhatsAppClient {
   abstract readonly mode: WhatsAppMode
   abstract connect(): Promise<void>
@@ -15,5 +19,6 @@ export default abstract class WhatsAppClient {
   abstract isConnected(): boolean
   abstract sendToGroup(text: string): Promise<void>
   abstract sendToUser(phoneNumber: string, text: string): Promise<void>
+  abstract sendPollToGroup(question: string, options: string[]): Promise<PollSendResult>
   abstract onMessage(handler: IncomingMessageHandler): void
 }

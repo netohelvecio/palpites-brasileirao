@@ -15,3 +15,17 @@ export const MatchStatus = {
 } as const
 
 export type MatchStatus = (typeof MatchStatus)[keyof typeof MatchStatus]
+
+export const TiePollMode = {
+  POLL: 'poll',
+  EMOJI: 'emoji',
+} as const
+
+export type TiePollMode = (typeof TiePollMode)[keyof typeof TiePollMode]
+
+export const PickKind = {
+  UNIQUE: 'unique',
+  TIE: 'tie',
+} as const
+
+export type PickKind = (typeof PickKind)[keyof typeof PickKind]
