@@ -12,8 +12,15 @@ export interface StandingEntry {
   points: number
 }
 
+export interface TieCandidate {
+  match: FixtureCandidate
+  pointsSum: number
+  position: number
+}
+
 export type PickResult =
-  | { ok: true; match: FixtureCandidate; pointsMultiplier: number }
+  | { ok: true; kind: 'unique'; match: FixtureCandidate; pointsMultiplier: number }
+  | { ok: true; kind: 'tie'; candidates: TieCandidate[] }
   | { ok: false; reason: string }
 
 export function pickFeaturedMatch(
@@ -27,25 +34,41 @@ export function pickFeaturedMatch(
   const pointsByTeam = new Map(standings.map((s) => [s.teamId, s.points]))
   const pointsOf = (teamId: number) => pointsByTeam.get(teamId) ?? 0
 
-  let best: { match: FixtureCandidate; sum: number } | null = null
-  for (const fixture of fixtures) {
-    const sum = pointsOf(fixture.homeTeamId) + pointsOf(fixture.awayTeamId)
-    if (!best || sum > best.sum) {
-      best = { match: fixture, sum }
-    }
-  }
+  const scored = fixtures.map((f) => ({
+    match: f,
+    pointsSum: pointsOf(f.homeTeamId) + pointsOf(f.awayTeamId),
+  }))
+  const max = Math.max(...scored.map((s) => s.pointsSum))
+  const topGroup = scored.filter((s) => s.pointsSum === max)
 
   const top1 = standings[0]?.teamId
   const top2 = standings[1]?.teamId
-  const isOneVsTwo =
+  const isOneVsTwo = (m: FixtureCandidate) =>
     top1 !== undefined &&
     top2 !== undefined &&
-    ((best!.match.homeTeamId === top1 && best!.match.awayTeamId === top2) ||
-      (best!.match.homeTeamId === top2 && best!.match.awayTeamId === top1))
+    ((m.homeTeamId === top1 && m.awayTeamId === top2) ||
+      (m.homeTeamId === top2 && m.awayTeamId === top1))
 
+  // Tie-break 1×2: se algum empatado no top é 1×2, ele vence sem enquete.
+  const oneVsTwo = topGroup.find((s) => isOneVsTwo(s.match))
+  if (oneVsTwo) {
+    return { ok: true, kind: 'unique', match: oneVsTwo.match, pointsMultiplier: 2 }
+  }
+
+  if (topGroup.length === 1) {
+    return { ok: true, kind: 'unique', match: topGroup[0].match, pointsMultiplier: 1 }
+  }
+
+  const sorted = [...topGroup].sort(
+    (a, b) => a.match.kickoffAt.getTime() - b.match.kickoffAt.getTime()
+  )
   return {
     ok: true,
-    match: best!.match,
-    pointsMultiplier: isOneVsTwo ? 2 : 1,
+    kind: 'tie',
+    candidates: sorted.map((s, idx) => ({
+      match: s.match,
+      pointsSum: s.pointsSum,
+      position: idx + 1,
+    })),
   }
 }
