@@ -36,11 +36,13 @@ O teste...
 Testes de funções/classes sem dependências externas. Rápidos (~5ms cada), não bootam Adonis app, não tocam DB.
 
 **Cabe aqui:**
+
 - Pure services (`betting_policy`, `featured_match_picker`, `score_parser`, `ranking_service`, `guess_scoring_service`, `match_status_mapper`)
 - Pure mappers (`football_data_mappers`)
 - Templates WhatsApp em `unit/whatsapp/` (são funções `Input → string`)
 
 **NÃO cabe aqui:**
+
 - Tests que precisam de `app.container.make(...)` — vão pra functional/
 - Tests que precisam de DB — vão pra functional/
 - Tests de HTTP endpoint — vão pra functional/
@@ -73,15 +75,16 @@ Testes que precisam do Adonis app booted. Bootstrap roda migration + cada group 
 
 **Cabe aqui:**
 
-| Categoria | Exemplos |
-|---|---|
-| HTTP endpoints | `seasons.spec.ts`, `rounds.spec.ts`, `matches.spec.ts`, `pick_candidate_endpoint.spec.ts` |
+| Categoria                          | Exemplos                                                                                                                            |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| HTTP endpoints                     | `seasons.spec.ts`, `rounds.spec.ts`, `matches.spec.ts`, `pick_candidate_endpoint.spec.ts`                                           |
 | Services que precisam do container | `whatsapp_notifier.spec.ts`, `whatsapp_inbound_handler.spec.ts`, `round_finalizer_service.spec.ts`, `fixtures_sync_service.spec.ts` |
-| Jobs | `open_round_job.spec.ts`, `close_round_job.spec.ts`, `sync_scores_job.spec.ts`, `match_reminder_job.spec.ts` |
-| Repositories (queries reais) | `guess_repository.spec.ts`, `round_repository.spec.ts` |
-| Health/status | `health.spec.ts`, `whatsapp_status.spec.ts` |
+| Jobs                               | `open_round_job.spec.ts`, `close_round_job.spec.ts`, `sync_scores_job.spec.ts`, `match_reminder_job.spec.ts`                        |
+| Repositories (queries reais)       | `guess_repository.spec.ts`, `round_repository.spec.ts`                                                                              |
+| Health/status                      | `health.spec.ts`, `whatsapp_status.spec.ts`                                                                                         |
 
 **Naming:**
+
 - Endpoints REST: `<recurso>.spec.ts` (ex: `seasons.spec.ts`) ou `<endpoint>_endpoint.spec.ts` quando a ação é específica (ex: `pick_candidate_endpoint.spec.ts`).
 - Services/jobs/repos: `<nome_em_snake>.spec.ts` matching o nome do arquivo testado.
 
@@ -134,20 +137,24 @@ Mesma ideia em `whatsapp_notifier.spec.ts` quando faz sentido — métodos novos
 
 Fakes/mocks compartilhados de integrações externas. **Reuse antes de criar inline.**
 
-| Helper | Quando usar |
-|---|---|
-| `FakeWhatsAppClient` (`whatsapp_mock.ts`) | Qualquer teste que precisa simular `WhatsAppClient`. Tem `sentMessages`, `sentDms`, `sentPolls`, `throwOnSend`, `throwOnSendToUser`, `throwOnSendPoll`, `pollMessageId`, `simulateIncoming`. |
-| `FakeFootballDataClient` (`football_data_mock.ts`) | Mock do `FootballDataClient`. Use com `fakeStandings(...)` e `fakeMatch(...)`. |
+| Helper                                             | Quando usar                                                                                                                                                                                  |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `FakeWhatsAppClient` (`whatsapp_mock.ts`)          | Qualquer teste que precisa simular `WhatsAppClient`. Tem `sentMessages`, `sentDms`, `sentPolls`, `throwOnSend`, `throwOnSendToUser`, `throwOnSendPoll`, `pollMessageId`, `simulateIncoming`. |
+| `FakeFootballDataClient` (`football_data_mock.ts`) | Mock do `FootballDataClient`. Use com `fakeStandings(...)` e `fakeMatch(...)`.                                                                                                               |
 
 ### Estender helper > criar fake inline
 
 Se o helper não cobre um caso novo, **adicione uma capability ao helper** (campo público, flag de erro, contador) — não duplique uma classe inline no spec.
 
 ❌ **Errado:**
+
 ```ts
 class FakeClient extends WhatsAppClient {
   pollCalls = []
-  async sendPollToGroup(q, o) { this.pollCalls.push({ q, o }); return { messageId: 'x' } }
+  async sendPollToGroup(q, o) {
+    this.pollCalls.push({ q, o })
+    return { messageId: 'x' }
+  }
   // ...rest of abstract methods
 }
 ```
@@ -198,10 +205,10 @@ assert.equal(round.status, 'awaiting_pick')
 Padrão pra setup de dados:
 
 ```ts
-await UserFactory.create()                                    // 1 user com defaults
-await UserFactory.createMany(3)                               // 3 users
-await UserFactory.merge({ isAdmin: true }).create()           // override de campos
-await RoundFactory.with('season').create()                    // cria a relação também
+await UserFactory.create() // 1 user com defaults
+await UserFactory.createMany(3) // 3 users
+await UserFactory.merge({ isAdmin: true }).create() // override de campos
+await RoundFactory.with('season').create() // cria a relação também
 await RoundFactory.merge({ seasonId: s.id, status: 'open' }).create()
 ```
 
@@ -221,13 +228,13 @@ IDs vêm do `@beforeCreate` hook nos models — não passe `id` manualmente.
 
 ## Quando consolidar/separar specs
 
-| Cenário | Ação |
-|---|---|
-| Service ganhou método novo | Adicione test no spec existente desse service. |
+| Cenário                                                                     | Ação                                                                         |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Service ganhou método novo                                                  | Adicione test no spec existente desse service.                               |
 | Service tem várias responsabilidades distintas (cadastro, palpite, comando) | Mantenha tudo em **um** spec, organize com `test.group('X — feature', ...)`. |
-| Endpoint novo num resource já testado | Adicione no spec do resource (`matches.spec.ts`, `rounds.spec.ts`). |
-| Endpoint novo standalone (sem resource óbvio) | Crie `<nome>_endpoint.spec.ts` (ex: `pick_candidate_endpoint.spec.ts`). |
-| Template WhatsApp novo | Sempre `<nome>_template.spec.ts` em `unit/whatsapp/`. |
+| Endpoint novo num resource já testado                                       | Adicione no spec do resource (`matches.spec.ts`, `rounds.spec.ts`).          |
+| Endpoint novo standalone (sem resource óbvio)                               | Crie `<nome>_endpoint.spec.ts` (ex: `pick_candidate_endpoint.spec.ts`).      |
+| Template WhatsApp novo                                                      | Sempre `<nome>_template.spec.ts` em `unit/whatsapp/`.                        |
 
 ## Checklist antes de submeter spec novo
 
