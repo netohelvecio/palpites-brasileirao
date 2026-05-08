@@ -16,6 +16,8 @@ export type ScannedRoutes = {
     'rounds.index_by_season': { paramsTuple: [ParamValue]; params: {'seasonId': ParamValue} }
     'rounds.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'rounds.update_status': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'rounds.list_match_candidates': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'rounds.pick_candidate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'matches.show': { paramsTuple: [ParamValue]; params: {'roundId': ParamValue} }
     'matches.upsert': { paramsTuple: [ParamValue]; params: {'roundId': ParamValue} }
     'matches.refresh_score': { paramsTuple: [ParamValue]; params: {'roundId': ParamValue} }
@@ -33,6 +35,7 @@ export type ScannedRoutes = {
     'seasons.index': { paramsTuple?: []; params?: {} }
     'rounds.index_by_season': { paramsTuple: [ParamValue]; params: {'seasonId': ParamValue} }
     'rounds.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'rounds.list_match_candidates': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'matches.show': { paramsTuple: [ParamValue]; params: {'roundId': ParamValue} }
     'guesses.index_by_round': { paramsTuple: [ParamValue]; params: {'roundId': ParamValue} }
     'ranking.by_season': { paramsTuple: [ParamValue]; params: {'seasonId': ParamValue} }
@@ -45,6 +48,7 @@ export type ScannedRoutes = {
     'seasons.index': { paramsTuple?: []; params?: {} }
     'rounds.index_by_season': { paramsTuple: [ParamValue]; params: {'seasonId': ParamValue} }
     'rounds.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'rounds.list_match_candidates': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'matches.show': { paramsTuple: [ParamValue]; params: {'roundId': ParamValue} }
     'guesses.index_by_round': { paramsTuple: [ParamValue]; params: {'roundId': ParamValue} }
     'ranking.by_season': { paramsTuple: [ParamValue]; params: {'seasonId': ParamValue} }
@@ -54,6 +58,7 @@ export type ScannedRoutes = {
     'users.store': { paramsTuple?: []; params?: {} }
     'seasons.store': { paramsTuple?: []; params?: {} }
     'seasons.sync': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'rounds.pick_candidate': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'matches.refresh_score': { paramsTuple: [ParamValue]; params: {'roundId': ParamValue} }
     'guesses.store': { paramsTuple?: []; params?: {} }
   }

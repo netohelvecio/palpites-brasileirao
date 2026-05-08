@@ -151,6 +151,30 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/rounds_controller').default['updateStatus']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
+  'rounds.list_match_candidates': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/rounds/:id/match-candidates'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/rounds_controller').default['listMatchCandidates']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/rounds_controller').default['listMatchCandidates']>>>
+    }
+  }
+  'rounds.pick_candidate': {
+    methods: ["POST"]
+    pattern: '/api/v1/rounds/:id/pick-candidate'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/round_candidate_validator').pickCandidateValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/round_candidate_validator').pickCandidateValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/rounds_controller').default['pickCandidate']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/rounds_controller').default['pickCandidate']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'matches.show': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/rounds/:roundId/match'

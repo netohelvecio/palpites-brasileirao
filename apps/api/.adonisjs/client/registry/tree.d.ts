@@ -21,6 +21,8 @@ export interface ApiDefinition {
     indexBySeason: typeof routes['rounds.index_by_season']
     show: typeof routes['rounds.show']
     updateStatus: typeof routes['rounds.update_status']
+    listMatchCandidates: typeof routes['rounds.list_match_candidates']
+    pickCandidate: typeof routes['rounds.pick_candidate']
   }
   matches: {
     show: typeof routes['matches.show']
