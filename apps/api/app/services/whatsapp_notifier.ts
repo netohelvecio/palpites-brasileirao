@@ -1,4 +1,6 @@
 import { inject } from '@adonisjs/core'
+import logger from '@adonisjs/core/services/logger'
+import { TiePollMode } from '@palpites/shared'
 import WhatsAppClient from '#integrations/whatsapp/whatsapp_client'
 import {
   roundOpenedMessage,
@@ -24,6 +26,8 @@ import {
   matchReminderMessage,
   type MatchReminderInput,
 } from '#integrations/whatsapp/templates/match_reminder'
+import { tiePollMessage, type TiePollCandidate } from '#integrations/whatsapp/templates/tie_poll'
+import { tieEmojiFallbackMessage } from '#integrations/whatsapp/templates/tie_emoji_fallback'
 
 @inject()
 export default class WhatsAppNotifier {
@@ -71,5 +75,21 @@ export default class WhatsAppNotifier {
 
   async notifyMatchReminder(input: MatchReminderInput): Promise<void> {
     await this.client.sendToGroup(matchReminderMessage(input))
+  }
+
+  async notifyTieCandidatesPoll(payload: {
+    roundNumber: number
+    candidates: TiePollCandidate[]
+  }): Promise<{ mode: TiePollMode; messageId: string | null }> {
+    const { question, options } = tiePollMessage(payload)
+    try {
+      const r = await this.client.sendPollToGroup(question, options)
+      return { mode: TiePollMode.POLL, messageId: r.messageId }
+    } catch (err) {
+      logger.warn({ err }, 'WhatsAppNotifier: poll falhou, fallback emoji')
+      const fallback = tieEmojiFallbackMessage(payload)
+      await this.client.sendToGroup(fallback)
+      return { mode: TiePollMode.EMOJI, messageId: null }
+    }
   }
 }

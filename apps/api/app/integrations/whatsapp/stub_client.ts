@@ -30,6 +30,11 @@ export default class StubClient extends WhatsAppClient {
     logger.info({ phoneNumber, text }, 'WhatsApp stub: send to user')
   }
 
+  async sendPollToGroup(question: string, options: string[]): Promise<{ messageId: string }> {
+    logger.info({ question, options }, 'WhatsApp stub: send poll to group')
+    return { messageId: `stub-poll-${Date.now()}` }
+  }
+
   onMessage(_handler: IncomingMessageHandler): void {
     // stub: handler armazenado mas nunca chamado (sem fonte de mensagens)
   }

@@ -12,6 +12,14 @@ export default abstract class BaseRepository<M extends LucidModel> {
     return this.model.findOrFail(id) as Promise<InstanceType<M>>
   }
 
+  findByIdForUpdate(id: string, trx: TransactionClientContract) {
+    return this.model
+      .query({ client: trx })
+      .where('id', id)
+      .forUpdate()
+      .first() as Promise<InstanceType<M> | null>
+  }
+
   create(payload: Partial<InstanceType<M>>, trx?: TransactionClientContract) {
     return this.model.create(payload as any, { client: trx }) as Promise<InstanceType<M>>
   }

@@ -1,12 +1,15 @@
 import { test } from '@japa/runner'
+import { DateTime } from 'luxon'
 import app from '@adonisjs/core/services/app'
 import testUtils from '@adonisjs/core/services/test_utils'
 import FootballDataClient from '#integrations/football_data/client'
 import WhatsAppClient from '#integrations/whatsapp/whatsapp_client'
 import OpenRoundJob from '#jobs/open_round_job'
+import RoundCandidateRepository from '#repositories/round_candidate_repository'
 import { SeasonFactory } from '#factories/season_factory'
 import { RoundFactory } from '#factories/round_factory'
 import { MatchFactory } from '#factories/match_factory'
+import { RoundMatchCandidateFactory } from '#factories/round_match_candidate_factory'
 import { UserFactory } from '#factories/user_factory'
 import { FakeFootballDataClient, fakeStandings, fakeMatch } from '#tests/helpers/football_data_mock'
 import { FakeWhatsAppClient } from '#tests/helpers/whatsapp_mock'
@@ -294,4 +297,112 @@ test.group('OpenRoundJob', (group) => {
       teardownFakes()
     }
   }).timeout(15000)
+
+  test('round em awaiting_pick + WhatsApp ready + nenhum poll_message_id → manda poll', async ({
+    assert,
+  }) => {
+    const season = await SeasonFactory.merge({
+      isActive: true,
+      year: 2026,
+      externalCompetitionCode: 'BSA',
+    }).create()
+    const round = await RoundFactory.merge({
+      seasonId: season.id,
+      number: 5,
+      status: 'awaiting_pick',
+    }).create()
+    await RoundMatchCandidateFactory.merge({
+      roundId: round.id,
+      position: 1,
+      homeTeam: 'A',
+      awayTeam: 'B',
+    }).create()
+    await RoundMatchCandidateFactory.merge({
+      roundId: round.id,
+      position: 2,
+      homeTeam: 'C',
+      awayTeam: 'D',
+    }).create()
+
+    const { football, whatsapp } = setupFakes()
+    football.standings = fakeStandings(5, 2026, {})
+
+    try {
+      const job = await app.container.make(OpenRoundJob)
+      await job.run()
+
+      assert.lengthOf(whatsapp.sentPolls, 1)
+      assert.match(whatsapp.sentPolls[0].question, /Rodada 5/)
+
+      const candidateRepo = await app.container.make(RoundCandidateRepository)
+      const candidates = await candidateRepo.list(round.id)
+      assert.exists(candidates[0].pollMessageId)
+    } finally {
+      teardownFakes()
+    }
+  })
+
+  test('round em awaiting_pick + algum candidato com poll_message_id → não re-manda', async ({
+    assert,
+  }) => {
+    const season = await SeasonFactory.merge({
+      isActive: true,
+      year: 2026,
+      externalCompetitionCode: 'BSA',
+    }).create()
+    const round = await RoundFactory.merge({
+      seasonId: season.id,
+      number: 6,
+      status: 'awaiting_pick',
+    }).create()
+    await RoundMatchCandidateFactory.merge({
+      roundId: round.id,
+      position: 1,
+      pollMessageId: 'already-sent',
+    }).create()
+
+    const { football, whatsapp } = setupFakes()
+    football.standings = fakeStandings(6, 2026, {})
+
+    try {
+      const job = await app.container.make(OpenRoundJob)
+      await job.run()
+
+      assert.lengthOf(whatsapp.sentPolls, 0)
+    } finally {
+      teardownFakes()
+    }
+  })
+
+  test('depois do admin escolher (status=pending + match) → próximo run flipa pra open', async ({
+    assert,
+  }) => {
+    const season = await SeasonFactory.merge({
+      isActive: true,
+      year: 2026,
+      externalCompetitionCode: 'BSA',
+    }).create()
+    const round = await RoundFactory.merge({
+      seasonId: season.id,
+      number: 7,
+      status: 'pending',
+    }).create()
+    await MatchFactory.merge({
+      roundId: round.id,
+      kickoffAt: DateTime.now().plus({ hours: 2 }),
+    }).create()
+
+    const { football } = setupFakes()
+    football.standings = fakeStandings(7, 2026, {})
+
+    try {
+      const job = await app.container.make(OpenRoundJob)
+      await job.run()
+
+      await round.refresh()
+      assert.equal(round.status, 'open')
+    } finally {
+      teardownFakes()
+    }
+  })
 })

@@ -4,9 +4,12 @@ import logger from '@adonisjs/core/services/logger'
 import UserRepository from '#repositories/user_repository'
 import RoundRepository from '#repositories/round_repository'
 import GuessRepository from '#repositories/guess_repository'
+import RoundCandidateRepository from '#repositories/round_candidate_repository'
 import WhatsAppNotifier from '#services/whatsapp_notifier'
+import RoundCandidatePickService from '#services/round_candidate_pick_service'
 import { parseScore } from '#services/score_parser'
 import WhatsAppClient, { type IncomingMessage } from '#integrations/whatsapp/whatsapp_client'
+import { adminPickedMessage } from '#integrations/whatsapp/templates/admin_picked'
 
 const REGISTER_HELP =
   'Pra te cadastrar, manda: /cadastro <seu nome> <emoji>. Ex: /cadastro Helvécio ⚽'
@@ -15,6 +18,9 @@ const NOT_REGISTERED =
   'Você não está cadastrado. Manda /cadastro <seu nome> <emoji>. Ex: /cadastro Helvécio ⚽'
 const NO_OPEN_ROUND = 'Sem rodada aberta no momento.'
 const INTERNAL_ERROR = 'Erro interno, avise o admin.'
+const ESCOLHER_HELP = 'Uso: /escolher <número da posição>'
+const ESCOLHER_RESTRICTED = '⛔ Comando restrito a administradores.'
+const NO_AWAITING_ROUND = 'Nenhuma rodada aguardando escolha.'
 
 @inject()
 export default class WhatsAppInboundHandler {
@@ -23,12 +29,17 @@ export default class WhatsAppInboundHandler {
     private roundRepository: RoundRepository,
     private guessRepository: GuessRepository,
     private notifier: WhatsAppNotifier,
-    private client: WhatsAppClient
+    private client: WhatsAppClient,
+    private roundCandidateRepository: RoundCandidateRepository,
+    private roundCandidatePickService: RoundCandidatePickService
   ) {}
 
   async handle(msg: IncomingMessage): Promise<void> {
     if (/^\/cadastro\b/i.test(msg.text)) {
       return this.handleRegister(msg)
+    }
+    if (/^\/escolher\b/i.test(msg.text)) {
+      return this.handleEscolher(msg)
     }
     return this.handleGuess(msg)
   }
@@ -74,6 +85,71 @@ export default class WhatsAppInboundHandler {
       msg.fromNumber,
       `✅ Cadastrado, ${name} ${emoji}! A partir de agora você pode mandar palpites.`
     )
+  }
+
+  private async handleEscolher(msg: IncomingMessage): Promise<void> {
+    const match = msg.text.match(/^\/escolher\s+(\d+)\s*$/i)
+    if (!match) {
+      await this.client.sendToUser(msg.fromNumber, ESCOLHER_HELP)
+      return
+    }
+
+    const user = await this.userRepository.findByWhatsappNumber(msg.fromNumber)
+    if (!user) {
+      await this.client.sendToUser(msg.fromNumber, NOT_REGISTERED)
+      return
+    }
+    if (!user.isAdmin) {
+      await this.client.sendToUser(msg.fromNumber, ESCOLHER_RESTRICTED)
+      return
+    }
+
+    const round = await this.roundRepository.findCurrentAwaitingPickAcrossSeasons()
+    if (!round) {
+      await this.client.sendToUser(msg.fromNumber, NO_AWAITING_ROUND)
+      return
+    }
+
+    const position = Number.parseInt(match[1], 10)
+    const candidate = await this.roundCandidateRepository.findByRoundAndPosition(round.id, position)
+    if (!candidate) {
+      await this.client.sendToUser(
+        msg.fromNumber,
+        `Posição ${position} é inválida pra rodada atual.`
+      )
+      return
+    }
+
+    const result = await this.roundCandidatePickService.pick(round.id, candidate.id)
+    if (!result.ok) {
+      logger.error(
+        { reason: result.reason, roundId: round.id, candidateId: candidate.id },
+        'WhatsAppInboundHandler: pick falhou inesperadamente'
+      )
+      await this.client.sendToUser(msg.fromNumber, INTERNAL_ERROR)
+      return
+    }
+
+    try {
+      await this.client.sendToUser(
+        msg.fromNumber,
+        `✅ Jogo da rodada ${round.number} definido: ${candidate.homeTeam} x ${candidate.awayTeam}`
+      )
+    } catch (err) {
+      logger.error({ err }, 'WhatsAppInboundHandler: falha ao mandar reply privado /escolher')
+    }
+
+    try {
+      await this.client.sendToGroup(
+        adminPickedMessage({
+          roundNumber: round.number,
+          homeTeam: candidate.homeTeam,
+          awayTeam: candidate.awayTeam,
+        })
+      )
+    } catch (err) {
+      logger.error({ err }, 'WhatsAppInboundHandler: falha ao postar admin pick no grupo')
+    }
   }
 
   private async handleGuess(msg: IncomingMessage): Promise<void> {

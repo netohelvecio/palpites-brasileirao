@@ -9,8 +9,11 @@ export class FakeWhatsAppClient extends WhatsAppClient {
   private connected = true
   public sentMessages: string[] = []
   public sentDms: { number: string; text: string }[] = []
+  public sentPolls: { question: string; options: string[] }[] = []
   public throwOnSend: Error | null = null
   public throwOnSendToUser: Error | null = null
+  public throwOnSendPoll: Error | null = null
+  public pollMessageId = 'poll-msg-1'
   private messageHandler: IncomingMessageHandler | null = null
 
   async connect() {
@@ -37,6 +40,12 @@ export class FakeWhatsAppClient extends WhatsAppClient {
   async sendToUser(phoneNumber: string, text: string): Promise<void> {
     if (this.throwOnSendToUser) throw this.throwOnSendToUser
     this.sentDms.push({ number: phoneNumber, text })
+  }
+
+  async sendPollToGroup(question: string, options: string[]): Promise<{ messageId: string }> {
+    if (this.throwOnSendPoll) throw this.throwOnSendPoll
+    this.sentPolls.push({ question, options })
+    return { messageId: this.pollMessageId }
   }
 
   onMessage(handler: IncomingMessageHandler): void {

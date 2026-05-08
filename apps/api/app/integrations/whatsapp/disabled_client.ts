@@ -21,6 +21,10 @@ export default class DisabledClient extends WhatsAppClient {
     throw new Error('WhatsApp disabled: sendToUser não deveria ser chamado (gate falhou?)')
   }
 
+  async sendPollToGroup(_question: string, _options: string[]): Promise<{ messageId: string }> {
+    throw new Error('WhatsApp disabled: sendPollToGroup não deveria ser chamado (gate falhou?)')
+  }
+
   onMessage(_handler: IncomingMessageHandler): void {
     // disabled: handler nunca é chamado
   }

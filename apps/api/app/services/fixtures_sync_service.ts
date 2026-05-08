@@ -1,7 +1,13 @@
 import { inject } from '@adonisjs/core'
 import db from '@adonisjs/lucid/services/db'
 import { DateTime } from 'luxon'
-import { MatchStatus, RoundStatus, type MatchView } from '@palpites/shared'
+import {
+  MatchStatus,
+  PickKind,
+  RoundStatus,
+  type MatchCandidateView,
+  type MatchView,
+} from '@palpites/shared'
 import FootballDataClient from '#integrations/football_data/client'
 import {
   toFixtureCandidate,
@@ -11,8 +17,10 @@ import {
 } from '#integrations/football_data/mappers'
 import { pickFeaturedMatch } from '#services/featured_match_picker'
 import { presentMatch } from '#presenters/match_presenter'
+import { presentMatchCandidate } from '#presenters/match_candidate_presenter'
 import MatchRepository from '#repositories/match_repository'
 import RoundRepository from '#repositories/round_repository'
+import RoundCandidateRepository from '#repositories/round_candidate_repository'
 import SeasonRepository from '#repositories/season_repository'
 
 export interface SyncReport {
@@ -22,6 +30,7 @@ export interface SyncReport {
   skipped: boolean
   reason?: string
   match?: MatchView
+  candidates?: MatchCandidateView[]
 }
 
 @inject()
@@ -30,7 +39,8 @@ export default class FixturesSyncService {
     private client: FootballDataClient,
     private seasonRepository: SeasonRepository,
     private roundRepository: RoundRepository,
-    private matchRepository: MatchRepository
+    private matchRepository: MatchRepository,
+    private roundCandidateRepository: RoundCandidateRepository
   ) {}
 
   async syncCurrentMatchday(seasonId: string): Promise<SyncReport> {
@@ -44,6 +54,18 @@ export default class FixturesSyncService {
       seasonId,
       currentMatchday
     )
+
+    if (existingRound?.status === RoundStatus.AWAITING_PICK) {
+      const candidates = await this.roundCandidateRepository.list(existingRound.id)
+      return {
+        seasonId,
+        currentMatchday,
+        created: false,
+        skipped: true,
+        reason: 'awaiting admin pick',
+        candidates: candidates.map(presentMatchCandidate),
+      }
+    }
 
     if (existingRound) {
       const existingMatch = await this.matchRepository.findByRoundId(existingRound.id)
@@ -78,34 +100,61 @@ export default class FixturesSyncService {
       }
     }
 
-    const created = await db.transaction(async (trx) => {
-      const round =
-        existingRound ??
-        (await this.roundRepository.create(
-          { seasonId, number: currentMatchday, status: RoundStatus.PENDING },
-          trx
-        ))
+    if (pick.kind === PickKind.UNIQUE) {
+      const created = await db.transaction(async (trx) => {
+        const round =
+          existingRound ??
+          (await this.roundRepository.create(
+            { seasonId, number: currentMatchday, status: RoundStatus.PENDING },
+            trx
+          ))
 
-      return this.matchRepository.create(
-        {
-          roundId: round.id,
-          externalId: pick.match.externalId,
-          homeTeam: pick.match.homeTeamName,
-          awayTeam: pick.match.awayTeamName,
-          kickoffAt: DateTime.fromJSDate(pick.match.kickoffAt),
-          status: MatchStatus.SCHEDULED,
-          pointsMultiplier: pick.pointsMultiplier,
-        },
-        trx
-      )
+        return this.matchRepository.create(
+          {
+            roundId: round.id,
+            externalId: pick.match.externalId,
+            homeTeam: pick.match.homeTeamName,
+            awayTeam: pick.match.awayTeamName,
+            kickoffAt: DateTime.fromJSDate(pick.match.kickoffAt),
+            status: MatchStatus.SCHEDULED,
+            pointsMultiplier: pick.pointsMultiplier,
+          },
+          trx
+        )
+      })
+
+      return {
+        seasonId,
+        currentMatchday,
+        created: true,
+        skipped: false,
+        match: presentMatch(created),
+      }
+    }
+
+    // pick.kind === PickKind.TIE
+    await db.transaction(async (trx) => {
+      let round = existingRound
+      if (!round) {
+        round = await this.roundRepository.create(
+          { seasonId, number: currentMatchday, status: RoundStatus.AWAITING_PICK },
+          trx
+        )
+      } else if (round.status === RoundStatus.PENDING) {
+        await this.roundRepository.update(round, { status: RoundStatus.AWAITING_PICK }, trx)
+      }
+      await this.roundCandidateRepository.bulkCreate(round.id, pick.candidates, trx)
     })
 
+    const round = await this.roundRepository.findBySeasonAndNumber(seasonId, currentMatchday)
+    const persisted = await this.roundCandidateRepository.list(round!.id)
     return {
       seasonId,
       currentMatchday,
-      created: true,
+      created: false,
       skipped: false,
-      match: presentMatch(created),
+      reason: 'awaiting admin pick',
+      candidates: persisted.map(presentMatchCandidate),
     }
   }
 }

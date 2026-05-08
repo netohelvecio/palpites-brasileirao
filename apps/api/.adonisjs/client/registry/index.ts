@@ -78,6 +78,18 @@ const routes = {
     tokens: [{"old":"/api/v1/rounds/:id/status","type":0,"val":"api","end":""},{"old":"/api/v1/rounds/:id/status","type":0,"val":"v1","end":""},{"old":"/api/v1/rounds/:id/status","type":0,"val":"rounds","end":""},{"old":"/api/v1/rounds/:id/status","type":1,"val":"id","end":""},{"old":"/api/v1/rounds/:id/status","type":0,"val":"status","end":""}],
     types: placeholder as Registry['rounds.update_status']['types'],
   },
+  'rounds.list_match_candidates': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/rounds/:id/match-candidates',
+    tokens: [{"old":"/api/v1/rounds/:id/match-candidates","type":0,"val":"api","end":""},{"old":"/api/v1/rounds/:id/match-candidates","type":0,"val":"v1","end":""},{"old":"/api/v1/rounds/:id/match-candidates","type":0,"val":"rounds","end":""},{"old":"/api/v1/rounds/:id/match-candidates","type":1,"val":"id","end":""},{"old":"/api/v1/rounds/:id/match-candidates","type":0,"val":"match-candidates","end":""}],
+    types: placeholder as Registry['rounds.list_match_candidates']['types'],
+  },
+  'rounds.pick_candidate': {
+    methods: ["POST"],
+    pattern: '/api/v1/rounds/:id/pick-candidate',
+    tokens: [{"old":"/api/v1/rounds/:id/pick-candidate","type":0,"val":"api","end":""},{"old":"/api/v1/rounds/:id/pick-candidate","type":0,"val":"v1","end":""},{"old":"/api/v1/rounds/:id/pick-candidate","type":0,"val":"rounds","end":""},{"old":"/api/v1/rounds/:id/pick-candidate","type":1,"val":"id","end":""},{"old":"/api/v1/rounds/:id/pick-candidate","type":0,"val":"pick-candidate","end":""}],
+    types: placeholder as Registry['rounds.pick_candidate']['types'],
+  },
   'matches.show': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/rounds/:roundId/match',
