@@ -36,6 +36,8 @@ router
     router.get('/seasons/:seasonId/rounds', [RoundsController, 'indexBySeason'])
     router.get('/rounds/:id', [RoundsController, 'show'])
     router.patch('/rounds/:id/status', [RoundsController, 'updateStatus'])
+    router.get('/rounds/:id/match-candidates', [RoundsController, 'listMatchCandidates'])
+    router.post('/rounds/:id/pick-candidate', [RoundsController, 'pickCandidate'])
 
     router.get('/rounds/:roundId/match', [MatchesController, 'show'])
     router.put('/rounds/:roundId/match', [MatchesController, 'upsert'])

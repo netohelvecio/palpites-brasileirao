@@ -5,6 +5,9 @@ import FootballDataClient from '#integrations/football_data/client'
 import Match from '#models/match'
 import { RoundFactory } from '#factories/round_factory'
 import { MatchFactory } from '#factories/match_factory'
+import { RoundMatchCandidateFactory } from '#factories/round_match_candidate_factory'
+import { SeasonFactory } from '#factories/season_factory'
+import RoundCandidateRepository from '#repositories/round_candidate_repository'
 import { FakeFootballDataClient, fakeMatch } from '#tests/helpers/football_data_mock'
 
 const HEADERS = { authorization: 'Bearer test-admin-token' }
@@ -187,5 +190,33 @@ test.group('Matches', (group) => {
     const round = await RoundFactory.with('season').create()
     const res = await client.put(`/api/v1/rounds/${round.id}/match`).json({})
     res.assertStatus(401)
+  })
+
+  test('PUT /rounds/:roundId/match em round awaiting_pick → cria match, flipa pra pending, soft-deleta candidatos', async ({
+    client,
+    assert,
+  }) => {
+    const season = await SeasonFactory.merge({ isActive: true }).create()
+    const round = await RoundFactory.merge({
+      seasonId: season.id,
+      status: 'awaiting_pick',
+    }).create()
+    await RoundMatchCandidateFactory.merge({ roundId: round.id, position: 1 }).create()
+    await RoundMatchCandidateFactory.merge({ roundId: round.id, position: 2 }).create()
+
+    const res = await client.put(`/api/v1/rounds/${round.id}/match`).headers(HEADERS).json({
+      externalId: 999,
+      homeTeam: 'Override Home',
+      awayTeam: 'Override Away',
+      kickoffAt: '2026-05-04T20:00:00.000Z',
+    })
+
+    res.assertStatus(200)
+    await round.refresh()
+    assert.equal(round.status, 'pending')
+
+    const candidateRepo = await app.container.make(RoundCandidateRepository)
+    const remaining = await candidateRepo.list(round.id)
+    assert.lengthOf(remaining, 0)
   })
 })

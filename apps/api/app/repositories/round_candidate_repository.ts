@@ -20,6 +20,13 @@ export default class RoundCandidateRepository extends BaseRepository<typeof Roun
       .first()
   }
 
+  findByIdInRound(candidateId: string, roundId: string, trx?: TransactionClientContract) {
+    return RoundMatchCandidate.query({ client: trx })
+      .where('id', candidateId)
+      .where('round_id', roundId)
+      .first()
+  }
+
   async bulkCreate(
     roundId: string,
     candidates: TieCandidate[],
