@@ -3,6 +3,7 @@ import logger from '@adonisjs/core/services/logger'
 import { RoundStatus } from '@palpites/shared'
 import FixturesSyncService, { type SyncReport } from '#services/fixtures_sync_service'
 import RoundRepository from '#repositories/round_repository'
+import RoundCandidateRepository from '#repositories/round_candidate_repository'
 import SeasonRepository from '#repositories/season_repository'
 import MatchRepository from '#repositories/match_repository'
 import UserRepository from '#repositories/user_repository'
@@ -27,7 +28,8 @@ export default class OpenRoundJob {
     private matchRepository: MatchRepository,
     private fixturesSyncService: FixturesSyncService,
     private notifier: WhatsAppNotifier,
-    private userRepository: UserRepository
+    private userRepository: UserRepository,
+    private roundCandidateRepository: RoundCandidateRepository
   ) {}
 
   async run(): Promise<OpenRoundReport> {
@@ -41,6 +43,12 @@ export default class OpenRoundJob {
           season.id,
           syncReport.currentMatchday
         )
+
+        if (round?.status === RoundStatus.AWAITING_PICK) {
+          await this.handleAwaitingPick(season.id, round.id, round.number)
+          runs.push({ seasonId: season.id, syncReport, roundOpened: false })
+          continue
+        }
 
         let roundOpened = false
         if (round && round.status === RoundStatus.PENDING && syncReport.match) {
@@ -108,5 +116,33 @@ export default class OpenRoundJob {
 
     logger.info({ runs }, 'OpenRoundJob: finished')
     return { runs }
+  }
+
+  private async handleAwaitingPick(
+    seasonId: string,
+    roundId: string,
+    roundNumber: number
+  ): Promise<void> {
+    if (!this.notifier.isReady()) {
+      logger.warn({ seasonId, roundId }, 'OpenRoundJob: WhatsApp offline — skipping tie poll send')
+      return
+    }
+
+    const candidates = await this.roundCandidateRepository.list(roundId)
+    if (candidates.length === 0) return
+
+    const alreadySent = candidates.some((c) => c.pollMessageId !== null)
+    if (alreadySent) return
+
+    const result = await this.notifier.notifyTieCandidatesPoll({
+      roundNumber,
+      candidates: candidates.map((c) => ({
+        homeTeam: c.homeTeam,
+        awayTeam: c.awayTeam,
+        position: c.position,
+      })),
+    })
+    const sentinel = result.messageId ?? 'fallback-emoji'
+    await this.roundCandidateRepository.markPollSent(roundId, sentinel)
   }
 }

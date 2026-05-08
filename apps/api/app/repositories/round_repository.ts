@@ -53,4 +53,14 @@ export default class RoundRepository extends BaseRepository<typeof Round> {
       })
       .preload('match')
   }
+
+  findCurrentAwaitingPickAcrossSeasons() {
+    return Round.query()
+      .where('status', RoundStatus.AWAITING_PICK)
+      .whereHas('season', (s) => {
+        s.where('is_active', true)
+      })
+      .orderBy('created_at', 'asc')
+      .first()
+  }
 }

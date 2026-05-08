@@ -1,9 +1,18 @@
 import { test } from '@japa/runner'
 import { DateTime } from 'luxon'
 import app from '@adonisjs/core/services/app'
+import { TiePollMode } from '@palpites/shared'
 import WhatsAppClient from '#integrations/whatsapp/whatsapp_client'
 import WhatsAppNotifier from '#services/whatsapp_notifier'
 import { FakeWhatsAppClient } from '#tests/helpers/whatsapp_mock'
+
+const TIE_PAYLOAD = {
+  roundNumber: 12,
+  candidates: [
+    { homeTeam: 'A', awayTeam: 'B', position: 1 },
+    { homeTeam: 'C', awayTeam: 'D', position: 2 },
+  ],
+}
 
 test.group('WhatsAppNotifier', () => {
   test('isReady() reflete client.isConnected()', async ({ assert }) => {
@@ -146,6 +155,43 @@ test.group('WhatsAppNotifier', () => {
 
       assert.lengthOf(fake.sentMessages, 1)
       assert.equal(fake.sentMessages[0], 'Helvécio ⚽ palpitou: Palmeiras 2 x 1 Flamengo')
+    } finally {
+      app.container.restore(WhatsAppClient)
+    }
+  })
+
+  test('notifyTieCandidatesPoll: poll OK → mode=poll, messageId retornado', async ({ assert }) => {
+    const fake = new FakeWhatsAppClient()
+    fake.pollMessageId = 'msg-1'
+    app.container.swap(WhatsAppClient, () => fake)
+    try {
+      const notifier = await app.container.make(WhatsAppNotifier)
+      const r = await notifier.notifyTieCandidatesPoll(TIE_PAYLOAD)
+
+      assert.equal(r.mode, TiePollMode.POLL)
+      assert.equal(r.messageId, 'msg-1')
+      assert.lengthOf(fake.sentPolls, 1)
+      assert.lengthOf(fake.sentMessages, 0)
+    } finally {
+      app.container.restore(WhatsAppClient)
+    }
+  })
+
+  test('notifyTieCandidatesPoll: poll throws → fallback emoji, mode=emoji, messageId=null', async ({
+    assert,
+  }) => {
+    const fake = new FakeWhatsAppClient()
+    fake.throwOnSendPoll = new Error('poll not supported')
+    app.container.swap(WhatsAppClient, () => fake)
+    try {
+      const notifier = await app.container.make(WhatsAppNotifier)
+      const r = await notifier.notifyTieCandidatesPoll(TIE_PAYLOAD)
+
+      assert.equal(r.mode, TiePollMode.EMOJI)
+      assert.isNull(r.messageId)
+      assert.lengthOf(fake.sentMessages, 1)
+      assert.match(fake.sentMessages[0], /1️⃣ A x B/)
+      assert.match(fake.sentMessages[0], /2️⃣ C x D/)
     } finally {
       app.container.restore(WhatsAppClient)
     }

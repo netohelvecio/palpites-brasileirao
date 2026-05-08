@@ -6,10 +6,13 @@ import WhatsAppClient from '#integrations/whatsapp/whatsapp_client'
 import WhatsAppInboundHandler from '#services/whatsapp_inbound_handler'
 import User from '#models/user'
 import Guess from '#models/guess'
+import RoundRepository from '#repositories/round_repository'
+import MatchRepository from '#repositories/match_repository'
 import { UserFactory } from '#factories/user_factory'
 import { SeasonFactory } from '#factories/season_factory'
 import { RoundFactory } from '#factories/round_factory'
 import { MatchFactory } from '#factories/match_factory'
+import { RoundMatchCandidateFactory } from '#factories/round_match_candidate_factory'
 import { FakeWhatsAppClient } from '#tests/helpers/whatsapp_mock'
 
 test.group('WhatsAppInboundHandler — cadastro', (group) => {
@@ -448,6 +451,153 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
       assert.isNotNull(guess)
       assert.equal(guess!.homeScore, 1)
       assert.equal(guess!.awayScore, 1)
+    } finally {
+      teardownFake()
+    }
+  })
+})
+
+test.group('WhatsAppInboundHandler — escolher', (group) => {
+  group.each.setup(() => testUtils.db().wrapInGlobalTransaction())
+
+  function setupFake() {
+    const fake = new FakeWhatsAppClient()
+    app.container.swap(WhatsAppClient, () => fake)
+    return fake
+  }
+
+  function teardownFake() {
+    app.container.restore(WhatsAppClient)
+  }
+
+  test('admin com posição válida → cria match + flipa pra pending + responde DM + posta no grupo', async ({
+    assert,
+  }) => {
+    const fake = setupFake()
+    try {
+      const season = await SeasonFactory.merge({ isActive: true }).create()
+      const round = await RoundFactory.merge({
+        seasonId: season.id,
+        status: 'awaiting_pick',
+      }).create()
+      await RoundMatchCandidateFactory.merge({
+        roundId: round.id,
+        position: 1,
+        externalId: 1001,
+        homeTeam: 'Flamengo',
+        awayTeam: 'Palmeiras',
+        kickoffAt: DateTime.fromISO('2026-05-04T20:00:00Z'),
+      }).create()
+      await RoundMatchCandidateFactory.merge({
+        roundId: round.id,
+        position: 2,
+        externalId: 1002,
+      }).create()
+      const admin = await UserFactory.merge({
+        whatsappNumber: '5511999999999',
+        isAdmin: true,
+      }).create()
+
+      const handler = await app.container.make(WhatsAppInboundHandler)
+      await handler.handle({
+        fromNumber: admin.whatsappNumber,
+        text: '/escolher 1',
+        messageId: 'm1',
+      })
+
+      const roundRepo = await app.container.make(RoundRepository)
+      const refreshed = await roundRepo.findByIdOrFail(round.id)
+      assert.equal(refreshed.status, 'pending')
+
+      const matchRepo = await app.container.make(MatchRepository)
+      const match = await matchRepo.findByRoundId(round.id)
+      assert.exists(match)
+      assert.equal(match!.homeTeam, 'Flamengo')
+
+      assert.lengthOf(fake.sentDms, 1)
+      assert.match(fake.sentDms[0].text, /Flamengo x Palmeiras/)
+      assert.lengthOf(fake.sentMessages, 1)
+      assert.match(fake.sentMessages[0], /jogo definido pelo admin/i)
+    } finally {
+      teardownFake()
+    }
+  })
+
+  test('user comum → reply restrição, não cria match', async ({ assert }) => {
+    const fake = setupFake()
+    try {
+      const season = await SeasonFactory.merge({ isActive: true }).create()
+      const round = await RoundFactory.merge({
+        seasonId: season.id,
+        status: 'awaiting_pick',
+      }).create()
+      await RoundMatchCandidateFactory.merge({ roundId: round.id, position: 1 }).create()
+      const user = await UserFactory.merge({
+        whatsappNumber: '5511888888888',
+        isAdmin: false,
+      }).create()
+
+      const handler = await app.container.make(WhatsAppInboundHandler)
+      await handler.handle({
+        fromNumber: user.whatsappNumber,
+        text: '/escolher 1',
+        messageId: 'm2',
+      })
+
+      const matchRepo = await app.container.make(MatchRepository)
+      assert.notExists(await matchRepo.findByRoundId(round.id))
+      assert.lengthOf(fake.sentDms, 1)
+      assert.match(fake.sentDms[0].text, /restrito/i)
+    } finally {
+      teardownFake()
+    }
+  })
+
+  test('sem rodada awaiting → reply "nenhuma rodada"', async ({ assert }) => {
+    const fake = setupFake()
+    try {
+      const admin = await UserFactory.merge({
+        whatsappNumber: '5511777777777',
+        isAdmin: true,
+      }).create()
+
+      const handler = await app.container.make(WhatsAppInboundHandler)
+      await handler.handle({
+        fromNumber: admin.whatsappNumber,
+        text: '/escolher 1',
+        messageId: 'm3',
+      })
+
+      assert.lengthOf(fake.sentDms, 1)
+      assert.match(fake.sentDms[0].text, /nenhuma rodada aguardando/i)
+    } finally {
+      teardownFake()
+    }
+  })
+
+  test('posição inválida → reply', async ({ assert }) => {
+    const fake = setupFake()
+    try {
+      const season = await SeasonFactory.merge({ isActive: true }).create()
+      const round = await RoundFactory.merge({
+        seasonId: season.id,
+        status: 'awaiting_pick',
+      }).create()
+      await RoundMatchCandidateFactory.merge({ roundId: round.id, position: 1 }).create()
+      const admin = await UserFactory.merge({
+        whatsappNumber: '5511666666666',
+        isAdmin: true,
+      }).create()
+
+      const handler = await app.container.make(WhatsAppInboundHandler)
+      await handler.handle({
+        fromNumber: admin.whatsappNumber,
+        text: '/escolher 99',
+        messageId: 'm4',
+      })
+
+      assert.lengthOf(fake.sentDms, 1)
+      assert.match(fake.sentDms[0].text, /posição.*inválida/i)
     } finally {
       teardownFake()
     }
