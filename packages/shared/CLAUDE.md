@@ -6,8 +6,8 @@ Tipos e constantes compartilhadas entre `apps/api` e futuro `apps/web`. Zero run
 ```
 src/
   index.ts     # re-exporta tudo
-  status.ts    # RoundStatus, MatchStatus (const + type com mesmo nome)
-  views.ts     # Shapes "de fio" dos responses HTTP (UserSummary, MatchView, GuessListItem, GuessListView)
+  status.ts    # RoundStatus, MatchStatus, TiePollMode, PickKind (const + type homônimo, padrão `as const`)
+  views.ts     # Shapes "de fio" dos responses HTTP (UserSummary, MatchView, GuessListItem, GuessListView, MatchCandidateView)
 ```
 
 **Regra dos view types:** eles representam o **formato JSON do response**, não os models internos. Datas são `string` (ISO 8601), não `DateTime`. Enums são as string literals definidas em `status.ts`. Quando adicionar uma nova view, o presenter (`apps/api/app/presenters/`) faz o mapping de `Match` → `MatchView` serializando explicitamente (`kickoffAt: match.kickoffAt.toISO()!`).

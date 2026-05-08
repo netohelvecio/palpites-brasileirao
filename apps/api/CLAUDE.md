@@ -15,7 +15,7 @@ app/
   services/        # Regras de domínio puras e orquestração (score parser, scoring, ranking, betting policy)
   validators/      # VineJS validators (createUserValidator, etc.)
   middleware/      # admin_auth_middleware (Bearer admin), container_bindings_middleware, force_json_response_middleware
-  integrations/    # football_data/ (client + mappers + types); whatsapp/ virá via Baileys no plano 4
+  integrations/    # football_data/ (client + mappers + types); whatsapp/ (Baileys client + templates + tie poll)
   jobs/            # open_round_job, close_round_job, sync_scores_job — orchestrators chamados pelo scheduler e pelos ace commands
   exceptions/      # handler global
 commands/
@@ -33,9 +33,11 @@ start/
   routes.ts        # define rotas
   kernel.ts        # middleware global + named middlewares
 tests/
-  unit/            # testes de serviços puros (parser, scoring, ranking)
-  functional/      # testes de endpoints HTTP com banco de teste
+  unit/            # funções puras (services, mappers); subfolder unit/whatsapp/ pra templates
+  functional/      # endpoints HTTP, services com container, jobs, repositórios — tudo que precisa do app booted
+  helpers/         # FakeWhatsAppClient, FakeFootballDataClient — reuse antes de criar fake inline
   bootstrap.ts     # plugins Japa + hook de migração do banco de teste
+  CLAUDE.md        # convenções de alocação e escrita de tests
 ```
 
 ## Convenções locais
@@ -50,7 +52,7 @@ tests/
 - **Prefira `@beforeCreate`/`@beforeFind`/`@beforeFetch` hooks** em vez de lógica espalhada.
 - **Migrations são imutáveis após aplicadas**: para mudar schema, crie uma nova migration.
 - **Scheduler de jobs**: cron jobs em `start/scheduler.ts`, registrado em `adonisrc.ts → preloads` com `environment: ['web']` (não carrega em test/console/repl). Cada job em `app/jobs/` é resolvido via `app.container.make(...)`. Para disparo manual em dev, use os ace commands `node ace jobs:run-*` (em `commands/jobs/`, sempre com `static options = { startApp: true }`). Os `run-*` que enviam WhatsApp usam `withWhatsAppConnection` para conectar Baileys (preload web-only não dispara em ace) — **pare o `pnpm dev` antes** (auth multi-file não suporta duas sessões simultâneas).
-- **WhatsApp**: integração via Baileys em `app/integrations/whatsapp/` (port `WhatsAppClient` com `sendToGroup`/`sendToUser`/`onMessage`; impls `BaileysClient`/`StubClient`/`DisabledClient` escolhidas no `whatsapp_provider` por `WHATSAPP_MODE`). Outbound: `WhatsAppNotifier` em `app/services/`; jobs chamam `notifier.isReady()` antes de mudar status (offline → cron retenta). Inbound: `WhatsAppInboundHandler` em `app/services/` é registrado como callback no `start/whatsapp.ts` e processa DMs (`/cadastro <nome> <emoji>` é stateless; texto livre vira palpite via `score_parser`). Handler não tem gate — só roda quando socket está aberto; falhas pós-upsert são logadas, sem rollback (próxima edição vence). `WHATSAPP_GROUP_JID` é validado em `sendToGroup`, não em `connect` (chicken-and-egg com `whatsapp:list-groups`).
+- **WhatsApp**: integração via Baileys em `app/integrations/whatsapp/` (port `WhatsAppClient` com `sendToGroup`/`sendToUser`/`sendPollToGroup`/`onMessage`; impls `BaileysClient`/`StubClient`/`DisabledClient` escolhidas no `whatsapp_provider` por `WHATSAPP_MODE`). Outbound: `WhatsAppNotifier` em `app/services/`; jobs chamam `notifier.isReady()` antes de mudar status (offline → cron retenta). Inbound: `WhatsAppInboundHandler` em `app/services/` é registrado como callback no `start/whatsapp.ts` e processa DMs (`/cadastro <nome> <emoji>` é stateless; texto livre vira palpite via `score_parser`). Handler não tem gate — só roda quando socket está aberto; falhas pós-upsert são logadas, sem rollback (próxima edição vence). `WHATSAPP_GROUP_JID` é validado em `sendToGroup`, não em `connect` (chicken-and-egg com `whatsapp:list-groups`).
 - **Identidade do user no WhatsApp**: `users.whatsapp_number` aceita **telefone E.164** OU **JID `@lid`** (DMs com privacidade do remetente entram como `@lid`, geralmente sem `m.key.senderPn` resolvível em Baileys 6.7.x). Inbound do `BaileysClient` aceita os dois sufixos (`@s.whatsapp.net` e `@lid`), tenta `senderPn` e cai pro JID `@lid` completo no fallback. `sendToUser` detecta `@` na string e usa direto como JID — então tanto reply quanto DM proativa funcionam pros dois formatos. Pra descobrir o lid de um phone conhecido (e popular o cadastro): `node ace whatsapp:lookup-lid <phone-E.164>` chama `socket.onWhatsApp()` e devolve `{ jid, lid, exists }`. Pra correlacionar lids novos com usuários, o log `BaileysClient: DM inbound` traz `pushName` + `remoteJid`.
 - **Transações Lucid**: `BaseRepository.create(payload, trx?)` e `update(row, payload, trx?)` aceitam um `TransactionClientContract` opcional. Use `db.transaction(async (trx) => {...})` (de `@adonisjs/lucid/services/db`) e propague `trx` em **todas** as operações dentro do bloco — incluindo queries de leitura: `Model.query({ client: trx })` ou repo helpers que aceitem `trx`. Sem isso, a query vai pra outra conexão e não vê writes uncommitted.
 - **Status enums em produção**: use as constantes de `@palpites/shared` (`RoundStatus.OPEN`, `MatchStatus.FINISHED`) — não strings hardcoded — em services, jobs, controllers, repositories e factories. **Tests** podem manter literais (`'open'`, `'finished'`): funcionam como contrato/documentação do shape e quebram explicitamente se alguém renomear o enum value.
@@ -136,17 +138,11 @@ node ace test functional   # só funcionais
 node ace test unit --files='tests/unit/score_parser.spec.ts'
 ```
 
-Bootstrap roda `testUtils.db().migrate()` só em suites `functional`/`e2e` (unit tests não tocam DB). Cada test group usa `group.each.setup(() => testUtils.db().wrapInGlobalTransaction())` pra rollback automático (**não** `withGlobalTransaction`, que está deprecado).
-
-**Mockar clients de integração externa:** `app.container.swap(Client, () => fake as any)` no setup + `app.container.restore(Client)` em `finally`. Template: `tests/helpers/football_data_mock.ts` (`FakeFootballDataClient`). Uso típico em `tests/functional/seasons.spec.ts` e `matches.spec.ts`.
+> **Convenções de alocação e escrita** (qual pasta usar, naming, helpers, padrões de spec, checklist): ver [`tests/CLAUDE.md`](./tests/CLAUDE.md).
 
 **Gotcha:** se testes falharem com `ECONNREFUSED 127.0.0.1:5433`, o container `palpites_postgres_test` caiu. `docker compose up -d` da raiz sobe de novo.
 
-**Gotcha de transaction nos tests:** `wrapInGlobalTransaction` força todas as queries (mesmo sem `client: trx` explícito) a passarem pela mesma conexão da trx global. Isso **esconde** bugs de query dentro de `db.transaction(...)` que esquecem de propagar `trx` — em produção essas queries vão pra conexão separada e não enxergam writes uncommitted. Quando refactor mexer com transação, valide manualmente fora do test (REPL ou ace command com banco real).
-
 **REPL via stdin gotcha:** `node ace repl` alimentado por pipe fecha stdin rápido demais pro `await` top-level completar em scripts multiline. Use um IIFE async em uma única linha: `printf '(async () => { const m = await import("..."); ... })()\n' | node ace repl`.
-
-**Factories** em `database/factories/` geram dados de teste. Padrão: `await UserFactory.create()`, `await UserFactory.createMany(3)`, `await UserFactory.merge({ isAdmin: true }).create()`. Evitam duplicar setup e dão dados realistas via Faker. IDs continuam gerados pelo `@beforeCreate` hook do model.
 
 ## Coisas a evitar
 
