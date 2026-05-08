@@ -30,3 +30,14 @@ export interface GuessListView {
   match: MatchView | null
   guesses: GuessListItem[]
 }
+
+export interface MatchCandidateView {
+  id: string
+  externalId: number
+  homeTeam: string
+  awayTeam: string
+  /** ISO 8601 string */
+  kickoffAt: string
+  pointsSum: number
+  position: number
+}

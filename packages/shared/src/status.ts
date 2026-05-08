@@ -1,5 +1,6 @@
 export const RoundStatus = {
   PENDING: 'pending',
+  AWAITING_PICK: 'awaiting_pick',
   OPEN: 'open',
   CLOSED: 'closed',
   FINISHED: 'finished',

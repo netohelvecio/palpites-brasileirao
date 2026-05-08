@@ -91,6 +91,48 @@ export class MatchSchema extends BaseModel {
   declare updatedAt: DateTime
 }
 
+export class RoundMatchCandidateSchema extends BaseModel {
+  static $columns = [
+    'awayTeam',
+    'createdAt',
+    'externalId',
+    'homeTeam',
+    'id',
+    'isDeleted',
+    'kickoffAt',
+    'pointsSum',
+    'pollMessageId',
+    'position',
+    'roundId',
+    'updatedAt',
+  ] as const
+  $columns = RoundMatchCandidateSchema.$columns
+  @column()
+  declare awayTeam: string
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare externalId: number
+  @column()
+  declare homeTeam: string
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare isDeleted: boolean
+  @column.dateTime()
+  declare kickoffAt: DateTime
+  @column()
+  declare pointsSum: number
+  @column()
+  declare pollMessageId: string | null
+  @column()
+  declare position: number
+  @column()
+  declare roundId: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+}
+
 export class RoundSchema extends BaseModel {
   static $columns = [
     'createdAt',
