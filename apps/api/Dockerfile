@@ -43,6 +43,11 @@ COPY --from=builder --chown=node:node /repo/packages/shared/dist ./packages/shar
 COPY --from=builder --chown=node:node /repo/apps/api/build ./apps/api/build
 COPY --from=builder --chown=node:node /repo/apps/api/package.json ./apps/api/package.json
 
+# Pré-cria o mount point do volume de auth do WhatsApp com dono correto.
+# Sem isso, um volume `whatsapp_auth` recriado do zero vira root:root e o
+# user `node` quebra com EACCES ao gravar creds.json.
+RUN mkdir -p /app/storage/whatsapp-auth && chown -R node:node /app/storage
+
 WORKDIR /app/apps/api/build
 USER node
 EXPOSE 3333
