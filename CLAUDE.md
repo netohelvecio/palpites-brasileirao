@@ -117,7 +117,7 @@ pnpm --filter @palpites/shared lint
 
 ## Produção
 
-Deploy em **Oracle Cloud Always Free** (VM x86_64, Sao Paulo) acessível em `https://palpites-brasileirao.duckdns.org`. Stack via Docker Compose (api + caddy + postgres) em `/opt/palpites` na VM, SSH via `deploy@147.15.112.59`. Backups diários `pg_dump → Object Storage` (bucket `palpites-backups`, prefixo `pg/`). CI/CD: `quality.yml` (reusable) + `ci.yml` (PRs/branches) + `deploy.yml` (push em `main` → quality → build amd64 → push GHCR → SSH + migrations). Atualizar app em prod = `git push origin main`. Runbooks em `docs/runbooks/` (`backup-setup.md`, `duckdns-setup.md`, `github-secrets.md`).
+Deploy em **Oracle Cloud Always Free** (VM x86_64, Sao Paulo) acessível em `https://palpites-brasileirao.duckdns.org`. Stack via Docker Compose (api + caddy + postgres) em `/opt/palpites` na VM, SSH via `deploy@147.15.112.59` (chave `~/.ssh/palpites_actions`). Backups diários `pg_dump → Object Storage` (bucket `palpites-backups`, prefixo `pg/`). CI/CD: `quality.yml` (reusable) + `ci.yml` (PRs/branches) + `deploy.yml` (push em `main` → quality → build amd64 → push GHCR → SSH + migrations). Atualizar app em prod = `git push origin main`. Runbooks em `docs/runbooks/` (`prod-access.md` — SSH/banco/logs, `backup-setup.md`, `duckdns-setup.md`, `github-secrets.md`).
 
 ## Fontes de verdade
 
