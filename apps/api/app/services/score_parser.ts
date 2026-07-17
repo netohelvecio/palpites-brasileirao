@@ -1,6 +1,5 @@
 export type ParseResult =
-  | { ok: true; homeScore: number; awayScore: number }
-  | { ok: false; error: string }
+  { ok: true; homeScore: number; awayScore: number } | { ok: false; error: string }
 
 export interface MatchTeams {
   homeTeam: string

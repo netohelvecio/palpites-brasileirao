@@ -7,6 +7,8 @@ updates:
       day: monday
       time: "09:00"
       timezone: America/Sao_Paulo
+    cooldown:
+      default-days: 14
     open-pull-requests-limit: 5
     versioning-strategy: increase
     commit-message:
@@ -24,54 +26,6 @@ updates:
           - patch
       production-minor-patch:
         dependency-type: production
-        update-types:
-          - minor
-          - patch
-
-  - package-ecosystem: npm
-    directory: /apps/api
-    schedule:
-      interval: weekly
-      day: monday
-      time: "09:00"
-      timezone: America/Sao_Paulo
-    open-pull-requests-limit: 5
-    versioning-strategy: increase
-    commit-message:
-      prefix: chore
-      prefix-development: chore
-      include: scope
-    groups:
-      adonis:
-        patterns:
-          - "@adonisjs/*"
-          - "adonisjs"
-      dev-dependencies:
-        dependency-type: development
-        update-types:
-          - minor
-          - patch
-      production-minor-patch:
-        dependency-type: production
-        update-types:
-          - minor
-          - patch
-
-  - package-ecosystem: npm
-    directory: /packages/shared
-    schedule:
-      interval: weekly
-      day: monday
-      time: "09:00"
-      timezone: America/Sao_Paulo
-    open-pull-requests-limit: 3
-    versioning-strategy: increase
-    commit-message:
-      prefix: chore
-      include: scope
-    groups:
-      dev-dependencies:
-        dependency-type: development
         update-types:
           - minor
           - patch
@@ -83,6 +37,8 @@ updates:
       day: monday
       time: "09:00"
       timezone: America/Sao_Paulo
+    cooldown:
+      default-days: 14
     open-pull-requests-limit: 3
     commit-message:
       prefix: ci
@@ -99,6 +55,8 @@ updates:
       day: monday
       time: "09:00"
       timezone: America/Sao_Paulo
+    cooldown:
+      default-days: 14
     open-pull-requests-limit: 2
     commit-message:
       prefix: chore
