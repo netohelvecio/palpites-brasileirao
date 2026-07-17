@@ -36,7 +36,7 @@ packages/
 docs/
   superpowers/
     specs/          # especificações do projeto (fonte da verdade da arquitetura)
-    plans/          # planos de implementação numerados (1.1 → 1.8, depois 2.x, 3.x, 4.x)
+    plans/          # planos de implementação numerados por fase (1.x → 9.x)
 ```
 
 `apps/web/` (frontend Next.js) será adicionado em iteração futura.
@@ -76,6 +76,12 @@ docs/
 - **Planos pequenos** — implementation plans têm 3–6 tarefas, quebrados em subplanos numerados (1.1, 1.2, ...).
 - **Inline execution** é o modo preferido para executar planos.
 
+## Atualização de dependências
+
+- **Régua de 2 semanas**: só adotar versões com release ≥14 dias (npm `time`, GitHub releases). `dependabot.yml` tem `cooldown: default-days: 14`, mas ranges `^` podem resolver acima da régua — pinar exato quando necessário.
+- **PRs npm do Dependabot não são mergeáveis**: ele corrompe o `pnpm-lock.yaml` com as deps git do Baileys (`ERR_PNPM_LOCKFILE_MISSING_DEPENDENCY`). Bumps npm sempre localmente em branch manual + `pnpm install`; fechar os PRs dele apontando o substituto.
+- **pnpm major (10/11) adiado**: pnpm 10+ bloqueia lifecycle scripts de deps por default — migrar exige `onlyBuiltDependencies` p/ postinstalls de baileys/libsignal/sharp e teste do build Docker.
+
 ## Comandos úteis
 
 ```bash
@@ -96,6 +102,9 @@ cd apps/api && node ace migration:run
 
 # API — testes
 cd apps/api && node ace test
+
+# Bateria completa do CI (quality.yml) antes do push
+pnpm --filter @palpites/api typecheck && pnpm --filter @palpites/api lint && pnpm --filter @palpites/api format:check && pnpm --filter @palpites/api test
 
 # Shared — typecheck
 pnpm --filter @palpites/shared lint

@@ -33,6 +33,7 @@ src/
 
 - **ESM only** — `"type": "module"` no `package.json`.
 - **Build-on-install**: `main` e `types` apontam pra `./dist/...`. O script `prepare: tsc` roda automaticamente em `pnpm install` e gera `dist/`. Necessário pra produção: o build do Adonis (`apps/api`) emite JS que importa `@palpites/shared` resolvido via `dist/index.js`; sem `dist/`, o Node tenta carregar `src/index.ts` e quebra com `Cannot find module './status.js'` (a pista é uma dependência interna usar extensão `.js` num arquivo `.ts`).
+- **`rootDir: src` no tsconfig é obrigatório** — TS 6+ exige `rootDir` explícito quando há `outDir`; sem ele o build quebra com TS5011.
 - **Editou shared? Re-builda**: durante dev, mudanças em `src/` **não** se propagam via HMR. Rode `pnpm --filter @palpites/shared build` ou deixe `pnpm --filter @palpites/shared build:watch` rodando em outra aba (`tsc -w`).
 - **`lint` = `tsc --noEmit`** — não há ESLint aqui ainda.
 - **Export nomeado sempre**, sem default exports.
