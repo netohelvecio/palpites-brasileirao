@@ -3,7 +3,7 @@
 ## Quick start (copy-paste)
 
 ```bash
-nvm use                           # Node 24.14.0 (obrigatório, via .nvmrc)
+nvm use                           # Node 24.18.0 (obrigatório, via .nvmrc)
 pnpm install
 docker compose up -d              # Postgres dev:5432 e test:5433
 pnpm --filter @palpites/api dev   # API em http://localhost:3333
@@ -44,7 +44,7 @@ docs/
 ## Stack
 
 - **Linguagem:** TypeScript (ESM, `#imports/*` subpath aliases do Adonis)
-- **Runtime:** Node.js `24.14.0` (pinned via `.nvmrc`) — Adonis 7 exige Node 24+
+- **Runtime:** Node.js `24.18.0` (pinned via `.nvmrc`) — Adonis 7 exige Node 24+
 - **Framework:** Adonis 7 (`@adonisjs/core`)
 - **ORM:** Lucid (`@adonisjs/lucid`)
 - **Banco:** PostgreSQL 16 via Docker Compose (dev em `5432`, test em `5433`)

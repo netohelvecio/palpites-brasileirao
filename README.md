@@ -66,14 +66,14 @@ docs/
 
 ### Pré-requisitos
 
-- Node.js **24.14.0** (use `nvm` — há `.nvmrc` no repo)
+- Node.js **24.18.0** (use `nvm` — há `.nvmrc` no repo)
 - pnpm 9
 - Docker + Docker Compose
 
 ### Setup
 
 ```bash
-nvm use                           # Node 24.14.0
+nvm use                           # Node 24.18.0
 pnpm install
 docker compose up -d              # Postgres dev (5432) + test (5433)
 
