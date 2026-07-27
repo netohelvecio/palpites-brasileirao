@@ -70,7 +70,7 @@
     "youch": "^4.1.1"
   },
   "dependencies": {
-    "@adonisjs/core": "7.3.4",
+    "@adonisjs/core": "7.3.5",
     "@adonisjs/cors": "^3.0.0",
     "@adonisjs/lucid": "^22.4.2",
     "@japa/api-client": "^3.2.1",
@@ -80,7 +80,7 @@
     "@whiskeysockets/baileys": "6.7.23",
     "axios": "1.18.1",
     "luxon": "^3.7.2",
-    "node-cron": "4.5.0",
+    "node-cron": "4.6.0",
     "pg": "^8.22.0",
     "qrcode-terminal": "^0.12.0",
     "reflect-metadata": "^0.2.2"
