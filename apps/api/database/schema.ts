@@ -238,6 +238,7 @@ export class UserSchema extends BaseModel {
     'isDeleted',
     'name',
     'updatedAt',
+    'whatsappLid',
     'whatsappNumber',
   ] as const
   $columns = UserSchema.$columns
@@ -256,5 +257,7 @@ export class UserSchema extends BaseModel {
   @column.dateTime({ autoCreate: true, autoUpdate: true })
   declare updatedAt: DateTime
   @column()
-  declare whatsappNumber: string
+  declare whatsappLid: string | null
+  @column()
+  declare whatsappNumber: string | null
 }
