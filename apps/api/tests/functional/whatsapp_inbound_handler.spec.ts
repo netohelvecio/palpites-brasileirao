@@ -625,3 +625,127 @@ test.group('WhatsAppInboundHandler — escolher', (group) => {
     }
   })
 })
+
+test.group('WhatsAppInboundHandler — identidade dupla', (group) => {
+  group.each.setup(() => testUtils.db().wrapInGlobalTransaction())
+
+  function setupFake() {
+    const fake = new FakeWhatsAppClient()
+    app.container.swap(WhatsAppClient, () => fake)
+    return fake
+  }
+
+  function teardownFake() {
+    app.container.restore(WhatsAppClient)
+  }
+
+  test('acha o usuário pelo lid quando whatsapp_number é nulo', async ({ assert }) => {
+    const fake = setupFake()
+    try {
+      const user = await UserFactory.merge({
+        whatsappNumber: null,
+        whatsappLid: '1348703617067@lid',
+      }).create()
+      const handler = await app.container.make(WhatsAppInboundHandler)
+
+      await handler.handle({
+        fromNumber: '557196916296',
+        fromJid: '1348703617067@lid',
+        text: 'oi',
+        messageId: 'msg-lid-1',
+      })
+
+      assert.notMatch(fake.sentDms[0].text, /não está cadastrado/)
+      await user.refresh()
+      assert.equal(user.whatsappNumber, '557196916296')
+    } finally {
+      teardownFake()
+    }
+  })
+
+  test('auto-cura preenche whatsapp_lid que estava nulo', async ({ assert }) => {
+    setupFake()
+    try {
+      const user = await UserFactory.merge({
+        whatsappNumber: '5511999990201',
+        whatsappLid: null,
+      }).create()
+      const handler = await app.container.make(WhatsAppInboundHandler)
+
+      await handler.handle({
+        fromNumber: '5511999990201',
+        fromJid: '4444444444444@lid',
+        text: 'oi',
+        messageId: 'msg-lid-2',
+      })
+
+      await user.refresh()
+      assert.equal(user.whatsappLid, '4444444444444@lid')
+    } finally {
+      teardownFake()
+    }
+  })
+
+  test('divergência não sobrescreve o valor gravado', async ({ assert }) => {
+    setupFake()
+    try {
+      const user = await UserFactory.merge({
+        whatsappNumber: '5511999990202',
+        whatsappLid: '5555555555555@lid',
+      }).create()
+      const handler = await app.container.make(WhatsAppInboundHandler)
+
+      await handler.handle({
+        fromNumber: '5511999990202',
+        fromJid: '6666666666666@lid',
+        text: 'oi',
+        messageId: 'msg-lid-3',
+      })
+
+      await user.refresh()
+      assert.equal(user.whatsappLid, '5555555555555@lid')
+    } finally {
+      teardownFake()
+    }
+  })
+
+  test('/cadastro por @lid grava as duas identidades', async ({ assert }) => {
+    const fake = setupFake()
+    try {
+      const handler = await app.container.make(WhatsAppInboundHandler)
+
+      await handler.handle({
+        fromNumber: '5511999990203',
+        fromJid: '7777777777777@lid',
+        text: '/cadastro Ana 🦅',
+        messageId: 'msg-lid-4',
+      })
+
+      const user = await User.query().where('whatsapp_lid', '7777777777777@lid').first()
+      assert.isNotNull(user)
+      assert.equal(user!.whatsappNumber, '5511999990203')
+      assert.equal(fake.sentDms[0].number, '7777777777777@lid')
+    } finally {
+      teardownFake()
+    }
+  })
+
+  test('/cadastro por DM comum grava lid nulo', async ({ assert }) => {
+    setupFake()
+    try {
+      const handler = await app.container.make(WhatsAppInboundHandler)
+
+      await handler.handle({
+        fromNumber: '5511999990204',
+        fromJid: '5511999990204@s.whatsapp.net',
+        text: '/cadastro Bruno 🐯',
+        messageId: 'msg-lid-5',
+      })
+
+      const user = await User.query().where('whatsapp_number', '5511999990204').first()
+      assert.isNull(user!.whatsappLid)
+    } finally {
+      teardownFake()
+    }
+  })
+})

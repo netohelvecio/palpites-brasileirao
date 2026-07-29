@@ -1,6 +1,7 @@
 import { inject } from '@adonisjs/core'
 import { DateTime } from 'luxon'
 import logger from '@adonisjs/core/services/logger'
+import type User from '#models/user'
 import UserRepository from '#repositories/user_repository'
 import RoundRepository from '#repositories/round_repository'
 import GuessRepository from '#repositories/guess_repository'
@@ -65,7 +66,7 @@ export default class WhatsAppInboundHandler {
       return
     }
 
-    const existing = await this.userRepository.findByWhatsappNumber(msg.fromNumber ?? msg.fromJid)
+    const existing = await this.resolveUser(msg)
     if (existing) {
       await this.client.sendToUser(
         msg.fromJid,
@@ -77,7 +78,8 @@ export default class WhatsAppInboundHandler {
     await this.userRepository.create({
       name,
       emoji,
-      whatsappNumber: msg.fromNumber ?? msg.fromJid,
+      whatsappNumber: msg.fromNumber,
+      whatsappLid: msg.fromJid.endsWith('@lid') ? msg.fromJid : null,
       isAdmin: false,
     })
 
@@ -94,7 +96,7 @@ export default class WhatsAppInboundHandler {
       return
     }
 
-    const user = await this.userRepository.findByWhatsappNumber(msg.fromNumber ?? msg.fromJid)
+    const user = await this.resolveUser(msg)
     if (!user) {
       await this.client.sendToUser(msg.fromJid, NOT_REGISTERED)
       return
@@ -150,7 +152,7 @@ export default class WhatsAppInboundHandler {
   }
 
   private async handleGuess(msg: IncomingMessage): Promise<void> {
-    const user = await this.userRepository.findByWhatsappNumber(msg.fromNumber ?? msg.fromJid)
+    const user = await this.resolveUser(msg)
     if (!user) {
       await this.client.sendToUser(msg.fromJid, NOT_REGISTERED)
       return
@@ -221,5 +223,35 @@ export default class WhatsAppInboundHandler {
         'WhatsAppInboundHandler: falha ao postar no grupo'
       )
     }
+  }
+
+  private async resolveUser(msg: IncomingMessage): Promise<User | null> {
+    const user = await this.userRepository.findByWhatsappIdentity(msg.fromNumber, msg.fromJid)
+    if (user) await this.healIdentity(user, msg)
+    return user
+  }
+
+  private async healIdentity(user: User, msg: IncomingMessage): Promise<void> {
+    const incomingLid = msg.fromJid.endsWith('@lid') ? msg.fromJid : null
+    const patch: { whatsappNumber?: string; whatsappLid?: string } = {}
+
+    if (!user.whatsappNumber && msg.fromNumber) patch.whatsappNumber = msg.fromNumber
+    if (!user.whatsappLid && incomingLid) patch.whatsappLid = incomingLid
+
+    if (user.whatsappNumber && msg.fromNumber && user.whatsappNumber !== msg.fromNumber) {
+      logger.warn(
+        { userId: user.id, stored: user.whatsappNumber, incoming: msg.fromNumber },
+        'WhatsAppInboundHandler: whatsapp_number divergente'
+      )
+    }
+    if (user.whatsappLid && incomingLid && user.whatsappLid !== incomingLid) {
+      logger.warn(
+        { userId: user.id, stored: user.whatsappLid, incoming: incomingLid },
+        'WhatsAppInboundHandler: whatsapp_lid divergente'
+      )
+    }
+
+    if (Object.keys(patch).length === 0) return
+    await this.userRepository.update(user, patch)
   }
 }
