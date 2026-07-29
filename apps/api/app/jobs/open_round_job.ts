@@ -74,10 +74,16 @@ export default class OpenRoundJob {
 
             const users = await this.userRepository.list()
             for (const user of users) {
+              const target = user.whatsappTarget
+              if (!target) {
+                logger.warn({ userId: user.id }, 'OpenRoundJob: usuário sem identidade de WhatsApp')
+                continue
+              }
+
               try {
                 await this.notifier.notifyRoundOpenedToUser({
                   user: {
-                    whatsappNumber: user.whatsappNumber,
+                    whatsappTarget: target,
                     name: user.name,
                     emoji: user.emoji,
                   },

@@ -7,7 +7,7 @@ import { withWhatsAppConnection } from '#integrations/whatsapp/with_command_conn
 export default class WhatsAppLookupLid extends BaseCommand {
   static commandName = 'whatsapp:lookup-lid'
   static description =
-    'Resolve o lid de um número via socket.onWhatsApp — útil pra preencher users.whatsapp_number com o lid.'
+    'Resolve o lid de um número via socket.onWhatsApp — útil pra preencher users.whatsapp_lid.'
 
   static options: CommandOptions = {
     startApp: true,
