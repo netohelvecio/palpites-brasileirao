@@ -36,6 +36,7 @@ test.group('WhatsAppInboundHandler — cadastro', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990001',
+        fromJid: '5511999990001@s.whatsapp.net',
         text: '/cadastro Helvécio ⚽',
         messageId: 'msg-1',
       })
@@ -47,7 +48,7 @@ test.group('WhatsAppInboundHandler — cadastro', (group) => {
       assert.isFalse(user!.isAdmin)
 
       assert.lengthOf(fake.sentDms, 1)
-      assert.equal(fake.sentDms[0].number, '5511999990001')
+      assert.equal(fake.sentDms[0].number, '5511999990001@s.whatsapp.net')
       assert.match(fake.sentDms[0].text, /✅ Cadastrado, Helvécio ⚽/)
     } finally {
       teardownFake()
@@ -60,6 +61,7 @@ test.group('WhatsAppInboundHandler — cadastro', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990002',
+        fromJid: '5511999990002@s.whatsapp.net',
         text: '/cadastro João Silva 🐯',
         messageId: 'msg-2',
       })
@@ -81,6 +83,7 @@ test.group('WhatsAppInboundHandler — cadastro', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990003',
+        fromJid: '5511999990003@s.whatsapp.net',
         text: '/cadastro',
         messageId: 'msg-3',
       })
@@ -101,6 +104,7 @@ test.group('WhatsAppInboundHandler — cadastro', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990004',
+        fromJid: '5511999990004@s.whatsapp.net',
         text: '/cadastro Helvecio',
         messageId: 'msg-4',
       })
@@ -121,6 +125,7 @@ test.group('WhatsAppInboundHandler — cadastro', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990005',
+        fromJid: '5511999990005@s.whatsapp.net',
         text: `/cadastro ${longName} ⚽`,
         messageId: 'msg-5',
       })
@@ -145,6 +150,7 @@ test.group('WhatsAppInboundHandler — cadastro', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990006',
+        fromJid: '5511999990006@s.whatsapp.net',
         text: '/cadastro Outro Nome 🐯',
         messageId: 'msg-6',
       })
@@ -165,6 +171,7 @@ test.group('WhatsAppInboundHandler — cadastro', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990007',
+        fromJid: '5511999990007@s.whatsapp.net',
         text: '/CADASTRO Helvécio ⚽',
         messageId: 'msg-7',
       })
@@ -189,6 +196,7 @@ test.group('WhatsAppInboundHandler — roteamento', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990010',
+        fromJid: '5511999990010@s.whatsapp.net',
         text: '2x1 Palmeiras',
         messageId: 'msg-r1',
       })
@@ -206,6 +214,7 @@ test.group('WhatsAppInboundHandler — roteamento', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999999999',
+        fromJid: '5511999999999@s.whatsapp.net',
         text: '2x1 Palmeiras',
         messageId: 'msg-r2',
       })
@@ -266,6 +275,7 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990100',
+        fromJid: '5511999990100@s.whatsapp.net',
         text: '2x1 Palmeiras',
         messageId: 'g-1',
       })
@@ -280,7 +290,7 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
       assert.isNull(guess!.points)
 
       assert.lengthOf(fake.sentDms, 1)
-      assert.equal(fake.sentDms[0].number, '5511999990100')
+      assert.equal(fake.sentDms[0].number, '5511999990100@s.whatsapp.net')
       assert.match(fake.sentDms[0].text, /✅ Palpite registrado: Palmeiras 2 x 1 Flamengo/)
 
       assert.lengthOf(fake.sentMessages, 1)
@@ -305,11 +315,13 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
 
       await handler.handle({
         fromNumber: '5511999990101',
+        fromJid: '5511999990101@s.whatsapp.net',
         text: '2x1 Palmeiras',
         messageId: 'e-1',
       })
       await handler.handle({
         fromNumber: '5511999990101',
+        fromJid: '5511999990101@s.whatsapp.net',
         text: '1x1',
         messageId: 'e-2',
       })
@@ -336,6 +348,7 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990102',
+        fromJid: '5511999990102@s.whatsapp.net',
         text: '2x1 Palmeiras',
         messageId: 'nr-1',
       })
@@ -354,6 +367,7 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990103',
+        fromJid: '5511999990103@s.whatsapp.net',
         text: '2x1 Palmeiras',
         messageId: 'nr-2',
       })
@@ -373,6 +387,7 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990104',
+        fromJid: '5511999990104@s.whatsapp.net',
         text: '2x1 Palmeiras',
         messageId: 'kp-1',
       })
@@ -398,6 +413,7 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990105',
+        fromJid: '5511999990105@s.whatsapp.net',
         text: 'oi tudo bem',
         messageId: 'p-1',
       })
@@ -417,6 +433,7 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990106',
+        fromJid: '5511999990106@s.whatsapp.net',
         text: '2x1 Santos',
         messageId: 'p-2',
       })
@@ -440,6 +457,7 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990107',
+        fromJid: '5511999990107@s.whatsapp.net',
         text: '1x1',
         messageId: 'e-3',
       })
@@ -501,6 +519,7 @@ test.group('WhatsAppInboundHandler — escolher', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: admin.whatsappNumber,
+        fromJid: `${admin.whatsappNumber}@s.whatsapp.net`,
         text: '/escolher 1',
         messageId: 'm1',
       })
@@ -540,6 +559,7 @@ test.group('WhatsAppInboundHandler — escolher', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: user.whatsappNumber,
+        fromJid: `${user.whatsappNumber}@s.whatsapp.net`,
         text: '/escolher 1',
         messageId: 'm2',
       })
@@ -564,6 +584,7 @@ test.group('WhatsAppInboundHandler — escolher', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: admin.whatsappNumber,
+        fromJid: `${admin.whatsappNumber}@s.whatsapp.net`,
         text: '/escolher 1',
         messageId: 'm3',
       })
@@ -592,6 +613,7 @@ test.group('WhatsAppInboundHandler — escolher', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: admin.whatsappNumber,
+        fromJid: `${admin.whatsappNumber}@s.whatsapp.net`,
         text: '/escolher 99',
         messageId: 'm4',
       })

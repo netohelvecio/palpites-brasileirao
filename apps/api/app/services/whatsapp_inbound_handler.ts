@@ -47,13 +47,13 @@ export default class WhatsAppInboundHandler {
   private async handleRegister(msg: IncomingMessage): Promise<void> {
     const args = msg.text.replace(/^\/cadastro\b\s*/i, '').trim()
     if (!args) {
-      await this.client.sendToUser(msg.fromNumber, REGISTER_HELP)
+      await this.client.sendToUser(msg.fromJid, REGISTER_HELP)
       return
     }
 
     const tokens = args.split(/\s+/).filter((t) => t.length > 0)
     if (tokens.length < 2) {
-      await this.client.sendToUser(msg.fromNumber, REGISTER_HELP)
+      await this.client.sendToUser(msg.fromJid, REGISTER_HELP)
       return
     }
 
@@ -61,14 +61,14 @@ export default class WhatsAppInboundHandler {
     const name = tokens.slice(0, -1).join(' ')
 
     if (name.length > 80) {
-      await this.client.sendToUser(msg.fromNumber, NAME_TOO_LONG)
+      await this.client.sendToUser(msg.fromJid, NAME_TOO_LONG)
       return
     }
 
-    const existing = await this.userRepository.findByWhatsappNumber(msg.fromNumber)
+    const existing = await this.userRepository.findByWhatsappNumber(msg.fromNumber ?? msg.fromJid)
     if (existing) {
       await this.client.sendToUser(
-        msg.fromNumber,
+        msg.fromJid,
         `Você já está cadastrado como ${existing.name} ${existing.emoji}.`
       )
       return
@@ -77,12 +77,12 @@ export default class WhatsAppInboundHandler {
     await this.userRepository.create({
       name,
       emoji,
-      whatsappNumber: msg.fromNumber,
+      whatsappNumber: msg.fromNumber ?? msg.fromJid,
       isAdmin: false,
     })
 
     await this.client.sendToUser(
-      msg.fromNumber,
+      msg.fromJid,
       `✅ Cadastrado, ${name} ${emoji}! A partir de agora você pode mandar palpites.`
     )
   }
@@ -90,33 +90,30 @@ export default class WhatsAppInboundHandler {
   private async handleEscolher(msg: IncomingMessage): Promise<void> {
     const match = msg.text.match(/^\/escolher\s+(\d+)\s*$/i)
     if (!match) {
-      await this.client.sendToUser(msg.fromNumber, ESCOLHER_HELP)
+      await this.client.sendToUser(msg.fromJid, ESCOLHER_HELP)
       return
     }
 
-    const user = await this.userRepository.findByWhatsappNumber(msg.fromNumber)
+    const user = await this.userRepository.findByWhatsappNumber(msg.fromNumber ?? msg.fromJid)
     if (!user) {
-      await this.client.sendToUser(msg.fromNumber, NOT_REGISTERED)
+      await this.client.sendToUser(msg.fromJid, NOT_REGISTERED)
       return
     }
     if (!user.isAdmin) {
-      await this.client.sendToUser(msg.fromNumber, ESCOLHER_RESTRICTED)
+      await this.client.sendToUser(msg.fromJid, ESCOLHER_RESTRICTED)
       return
     }
 
     const round = await this.roundRepository.findCurrentAwaitingPickAcrossSeasons()
     if (!round) {
-      await this.client.sendToUser(msg.fromNumber, NO_AWAITING_ROUND)
+      await this.client.sendToUser(msg.fromJid, NO_AWAITING_ROUND)
       return
     }
 
     const position = Number.parseInt(match[1], 10)
     const candidate = await this.roundCandidateRepository.findByRoundAndPosition(round.id, position)
     if (!candidate) {
-      await this.client.sendToUser(
-        msg.fromNumber,
-        `Posição ${position} é inválida pra rodada atual.`
-      )
+      await this.client.sendToUser(msg.fromJid, `Posição ${position} é inválida pra rodada atual.`)
       return
     }
 
@@ -126,13 +123,13 @@ export default class WhatsAppInboundHandler {
         { reason: result.reason, roundId: round.id, candidateId: candidate.id },
         'WhatsAppInboundHandler: pick falhou inesperadamente'
       )
-      await this.client.sendToUser(msg.fromNumber, INTERNAL_ERROR)
+      await this.client.sendToUser(msg.fromJid, INTERNAL_ERROR)
       return
     }
 
     try {
       await this.client.sendToUser(
-        msg.fromNumber,
+        msg.fromJid,
         `✅ Jogo da rodada ${round.number} definido: ${candidate.homeTeam} x ${candidate.awayTeam}`
       )
     } catch (err) {
@@ -153,15 +150,15 @@ export default class WhatsAppInboundHandler {
   }
 
   private async handleGuess(msg: IncomingMessage): Promise<void> {
-    const user = await this.userRepository.findByWhatsappNumber(msg.fromNumber)
+    const user = await this.userRepository.findByWhatsappNumber(msg.fromNumber ?? msg.fromJid)
     if (!user) {
-      await this.client.sendToUser(msg.fromNumber, NOT_REGISTERED)
+      await this.client.sendToUser(msg.fromJid, NOT_REGISTERED)
       return
     }
 
     const round = await this.roundRepository.findOpenInActiveSeason()
     if (!round) {
-      await this.client.sendToUser(msg.fromNumber, NO_OPEN_ROUND)
+      await this.client.sendToUser(msg.fromJid, NO_OPEN_ROUND)
       return
     }
 
@@ -171,15 +168,12 @@ export default class WhatsAppInboundHandler {
         { roundId: round.id, fromNumber: msg.fromNumber },
         'WhatsAppInboundHandler: round open sem match associado'
       )
-      await this.client.sendToUser(msg.fromNumber, INTERNAL_ERROR)
+      await this.client.sendToUser(msg.fromJid, INTERNAL_ERROR)
       return
     }
 
     if (match.kickoffAt < DateTime.now()) {
-      await this.client.sendToUser(
-        msg.fromNumber,
-        `⏱️ Palpites fechados pra rodada ${round.number}.`
-      )
+      await this.client.sendToUser(msg.fromJid, `⏱️ Palpites fechados pra rodada ${round.number}.`)
       return
     }
 
@@ -189,7 +183,7 @@ export default class WhatsAppInboundHandler {
     })
     if (!parsed.ok) {
       await this.client.sendToUser(
-        msg.fromNumber,
+        msg.fromJid,
         `❌ Não entendi o placar. Exemplo: 2x1 ${match.homeTeam}, ou 1x1 (empate).`
       )
       return
@@ -202,7 +196,7 @@ export default class WhatsAppInboundHandler {
 
     try {
       await this.client.sendToUser(
-        msg.fromNumber,
+        msg.fromJid,
         `✅ Palpite registrado: ${match.homeTeam} ${parsed.homeScore} x ${parsed.awayScore} ${match.awayTeam}.`
       )
     } catch (err) {
