@@ -16,6 +16,7 @@ export default class UserRepository extends BaseRepository<typeof User> {
         if (phone) q.orWhere('whatsapp_number', phone)
         q.orWhere('whatsapp_lid', jid)
       })
+      .orderBy('created_at', 'asc')
       .first()
   }
 

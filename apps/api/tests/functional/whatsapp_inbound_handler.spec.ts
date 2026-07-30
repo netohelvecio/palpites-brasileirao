@@ -748,4 +748,85 @@ test.group('WhatsAppInboundHandler — identidade dupla', (group) => {
       teardownFake()
     }
   })
+
+  test('cruzamento de colunas: telefone divergente é preservado quando o usuário é achado via lid', async ({
+    assert,
+  }) => {
+    setupFake()
+    try {
+      const user = await UserFactory.merge({
+        whatsappNumber: '5511999990210',
+        whatsappLid: '8888888888888@lid',
+      }).create()
+      const handler = await app.container.make(WhatsAppInboundHandler)
+
+      await handler.handle({
+        fromNumber: '5511999990299',
+        fromJid: '8888888888888@lid',
+        text: 'oi',
+        messageId: 'msg-lid-6',
+      })
+
+      await user.refresh()
+      assert.equal(user.whatsappNumber, '5511999990210')
+      assert.equal(user.whatsappLid, '8888888888888@lid')
+    } finally {
+      teardownFake()
+    }
+  })
+
+  test('heal falho (23505 por lid duplicado entre dois users vivos) não derruba a mensagem', async ({
+    assert,
+  }) => {
+    const fake = setupFake()
+    try {
+      const userA = await UserFactory.merge({
+        whatsappNumber: '5511999990230',
+        whatsappLid: null,
+      }).create()
+      const userB = await UserFactory.merge({
+        whatsappNumber: null,
+        whatsappLid: '1231231231231@lid',
+      }).create()
+      userB.createdAt = userA.createdAt.plus({ minutes: 5 })
+      await userB.save()
+
+      const season = await SeasonFactory.merge({ isActive: true }).create()
+      const round = await RoundFactory.merge({
+        seasonId: season.id,
+        number: 20,
+        status: 'open',
+      }).create()
+      const match = await MatchFactory.merge({
+        roundId: round.id,
+        homeTeam: 'Palmeiras',
+        awayTeam: 'Flamengo',
+        kickoffAt: DateTime.now().plus({ hours: 2 }),
+      }).create()
+
+      const handler = await app.container.make(WhatsAppInboundHandler)
+      await handler.handle({
+        fromNumber: '5511999990230',
+        fromJid: '1231231231231@lid',
+        text: '2x1 Palmeiras',
+        messageId: 'msg-conflict-1',
+      })
+
+      const guess = await Guess.query()
+        .where('user_id', userA.id)
+        .where('match_id', match.id)
+        .first()
+      assert.isNotNull(guess)
+      assert.equal(guess!.homeScore, 2)
+      assert.equal(guess!.awayScore, 1)
+
+      assert.lengthOf(fake.sentDms, 1)
+      assert.match(fake.sentDms[0].text, /✅ Palpite registrado/)
+
+      await userA.refresh()
+      assert.isNull(userA.whatsappLid)
+    } finally {
+      teardownFake()
+    }
+  })
 })

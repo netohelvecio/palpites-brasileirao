@@ -53,4 +53,24 @@ test.group('UserRepository.findByWhatsappIdentity', (group) => {
 
     assert.isNull(found)
   })
+
+  test('com dois users vivos disputando o match, retorna o mais antigo deterministicamente', async ({
+    assert,
+  }) => {
+    const repo = await app.container.make(UserRepository)
+    const userB = await UserFactory.merge({
+      whatsappNumber: null,
+      whatsappLid: '4444444444444@lid',
+    }).create()
+    const userA = await UserFactory.merge({
+      whatsappNumber: '5511999990003',
+      whatsappLid: null,
+    }).create()
+    userA.createdAt = userB.createdAt.minus({ minutes: 5 })
+    await userA.save()
+
+    const found = await repo.findByWhatsappIdentity('5511999990003', '4444444444444@lid')
+
+    assert.equal(found!.id, userA.id)
+  })
 })

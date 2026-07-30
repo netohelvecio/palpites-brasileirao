@@ -1,6 +1,7 @@
 import { inject } from '@adonisjs/core'
 import { DateTime } from 'luxon'
 import logger from '@adonisjs/core/services/logger'
+import db from '@adonisjs/lucid/services/db'
 import type User from '#models/user'
 import UserRepository from '#repositories/user_repository'
 import RoundRepository from '#repositories/round_repository'
@@ -252,6 +253,14 @@ export default class WhatsAppInboundHandler {
     }
 
     if (Object.keys(patch).length === 0) return
-    await this.userRepository.update(user, patch)
+
+    try {
+      await db.transaction((trx) => this.userRepository.update(user, patch, trx))
+    } catch (err) {
+      logger.warn(
+        { userId: user.id, patch, err },
+        'WhatsAppInboundHandler: falha ao curar identidade'
+      )
+    }
   }
 }
