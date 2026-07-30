@@ -21,7 +21,7 @@ export default class User extends UserSchema {
   }
 
   get whatsappTarget(): string | null {
-    return this.whatsappNumber ?? this.whatsappLid
+    return this.whatsappLid ?? this.whatsappNumber
   }
 
   @beforeFind()
