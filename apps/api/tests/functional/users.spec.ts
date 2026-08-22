@@ -39,6 +39,19 @@ test.group('Users', (group) => {
     res.assertStatus(422)
   })
 
+  test('POST /users aceita número de usuário soft-deletado', async ({ client }) => {
+    const removed = await UserFactory.merge({ whatsappNumber: '5511999997777' }).create()
+    removed.isDeleted = true
+    await removed.save()
+
+    const res = await client
+      .post('/api/v1/users')
+      .headers(HEADERS)
+      .json({ name: 'Novo', whatsappNumber: '5511999997777', emoji: '⚽' })
+
+    res.assertStatus(201)
+  })
+
   test('GET /users lista', async ({ client, assert }) => {
     await UserFactory.createMany(3)
     const res = await client.get('/api/v1/users').headers(HEADERS)

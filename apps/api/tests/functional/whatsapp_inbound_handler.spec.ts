@@ -36,6 +36,7 @@ test.group('WhatsAppInboundHandler — cadastro', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990001',
+        fromJid: '5511999990001@s.whatsapp.net',
         text: '/cadastro Helvécio ⚽',
         messageId: 'msg-1',
       })
@@ -47,7 +48,7 @@ test.group('WhatsAppInboundHandler — cadastro', (group) => {
       assert.isFalse(user!.isAdmin)
 
       assert.lengthOf(fake.sentDms, 1)
-      assert.equal(fake.sentDms[0].number, '5511999990001')
+      assert.equal(fake.sentDms[0].number, '5511999990001@s.whatsapp.net')
       assert.match(fake.sentDms[0].text, /✅ Cadastrado, Helvécio ⚽/)
     } finally {
       teardownFake()
@@ -60,6 +61,7 @@ test.group('WhatsAppInboundHandler — cadastro', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990002',
+        fromJid: '5511999990002@s.whatsapp.net',
         text: '/cadastro João Silva 🐯',
         messageId: 'msg-2',
       })
@@ -81,6 +83,7 @@ test.group('WhatsAppInboundHandler — cadastro', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990003',
+        fromJid: '5511999990003@s.whatsapp.net',
         text: '/cadastro',
         messageId: 'msg-3',
       })
@@ -101,6 +104,7 @@ test.group('WhatsAppInboundHandler — cadastro', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990004',
+        fromJid: '5511999990004@s.whatsapp.net',
         text: '/cadastro Helvecio',
         messageId: 'msg-4',
       })
@@ -121,6 +125,7 @@ test.group('WhatsAppInboundHandler — cadastro', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990005',
+        fromJid: '5511999990005@s.whatsapp.net',
         text: `/cadastro ${longName} ⚽`,
         messageId: 'msg-5',
       })
@@ -145,6 +150,7 @@ test.group('WhatsAppInboundHandler — cadastro', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990006',
+        fromJid: '5511999990006@s.whatsapp.net',
         text: '/cadastro Outro Nome 🐯',
         messageId: 'msg-6',
       })
@@ -165,6 +171,7 @@ test.group('WhatsAppInboundHandler — cadastro', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990007',
+        fromJid: '5511999990007@s.whatsapp.net',
         text: '/CADASTRO Helvécio ⚽',
         messageId: 'msg-7',
       })
@@ -189,6 +196,7 @@ test.group('WhatsAppInboundHandler — roteamento', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990010',
+        fromJid: '5511999990010@s.whatsapp.net',
         text: '2x1 Palmeiras',
         messageId: 'msg-r1',
       })
@@ -206,6 +214,7 @@ test.group('WhatsAppInboundHandler — roteamento', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999999999',
+        fromJid: '5511999999999@s.whatsapp.net',
         text: '2x1 Palmeiras',
         messageId: 'msg-r2',
       })
@@ -266,6 +275,7 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990100',
+        fromJid: '5511999990100@s.whatsapp.net',
         text: '2x1 Palmeiras',
         messageId: 'g-1',
       })
@@ -280,7 +290,7 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
       assert.isNull(guess!.points)
 
       assert.lengthOf(fake.sentDms, 1)
-      assert.equal(fake.sentDms[0].number, '5511999990100')
+      assert.equal(fake.sentDms[0].number, '5511999990100@s.whatsapp.net')
       assert.match(fake.sentDms[0].text, /✅ Palpite registrado: Palmeiras 2 x 1 Flamengo/)
 
       assert.lengthOf(fake.sentMessages, 1)
@@ -305,11 +315,13 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
 
       await handler.handle({
         fromNumber: '5511999990101',
+        fromJid: '5511999990101@s.whatsapp.net',
         text: '2x1 Palmeiras',
         messageId: 'e-1',
       })
       await handler.handle({
         fromNumber: '5511999990101',
+        fromJid: '5511999990101@s.whatsapp.net',
         text: '1x1',
         messageId: 'e-2',
       })
@@ -336,6 +348,7 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990102',
+        fromJid: '5511999990102@s.whatsapp.net',
         text: '2x1 Palmeiras',
         messageId: 'nr-1',
       })
@@ -354,6 +367,7 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990103',
+        fromJid: '5511999990103@s.whatsapp.net',
         text: '2x1 Palmeiras',
         messageId: 'nr-2',
       })
@@ -373,6 +387,7 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990104',
+        fromJid: '5511999990104@s.whatsapp.net',
         text: '2x1 Palmeiras',
         messageId: 'kp-1',
       })
@@ -398,6 +413,7 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990105',
+        fromJid: '5511999990105@s.whatsapp.net',
         text: 'oi tudo bem',
         messageId: 'p-1',
       })
@@ -417,6 +433,7 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990106',
+        fromJid: '5511999990106@s.whatsapp.net',
         text: '2x1 Santos',
         messageId: 'p-2',
       })
@@ -440,6 +457,7 @@ test.group('WhatsAppInboundHandler — palpite', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: '5511999990107',
+        fromJid: '5511999990107@s.whatsapp.net',
         text: '1x1',
         messageId: 'e-3',
       })
@@ -501,6 +519,7 @@ test.group('WhatsAppInboundHandler — escolher', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: admin.whatsappNumber,
+        fromJid: `${admin.whatsappNumber}@s.whatsapp.net`,
         text: '/escolher 1',
         messageId: 'm1',
       })
@@ -540,6 +559,7 @@ test.group('WhatsAppInboundHandler — escolher', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: user.whatsappNumber,
+        fromJid: `${user.whatsappNumber}@s.whatsapp.net`,
         text: '/escolher 1',
         messageId: 'm2',
       })
@@ -564,6 +584,7 @@ test.group('WhatsAppInboundHandler — escolher', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: admin.whatsappNumber,
+        fromJid: `${admin.whatsappNumber}@s.whatsapp.net`,
         text: '/escolher 1',
         messageId: 'm3',
       })
@@ -592,12 +613,218 @@ test.group('WhatsAppInboundHandler — escolher', (group) => {
       const handler = await app.container.make(WhatsAppInboundHandler)
       await handler.handle({
         fromNumber: admin.whatsappNumber,
+        fromJid: `${admin.whatsappNumber}@s.whatsapp.net`,
         text: '/escolher 99',
         messageId: 'm4',
       })
 
       assert.lengthOf(fake.sentDms, 1)
       assert.match(fake.sentDms[0].text, /posição.*inválida/i)
+    } finally {
+      teardownFake()
+    }
+  })
+})
+
+test.group('WhatsAppInboundHandler — identidade dupla', (group) => {
+  group.each.setup(() => testUtils.db().wrapInGlobalTransaction())
+
+  function setupFake() {
+    const fake = new FakeWhatsAppClient()
+    app.container.swap(WhatsAppClient, () => fake)
+    return fake
+  }
+
+  function teardownFake() {
+    app.container.restore(WhatsAppClient)
+  }
+
+  test('acha o usuário pelo lid quando whatsapp_number é nulo', async ({ assert }) => {
+    const fake = setupFake()
+    try {
+      const user = await UserFactory.merge({
+        whatsappNumber: null,
+        whatsappLid: '1348703617067@lid',
+      }).create()
+      const handler = await app.container.make(WhatsAppInboundHandler)
+
+      await handler.handle({
+        fromNumber: '557196916296',
+        fromJid: '1348703617067@lid',
+        text: 'oi',
+        messageId: 'msg-lid-1',
+      })
+
+      assert.notMatch(fake.sentDms[0].text, /não está cadastrado/)
+      await user.refresh()
+      assert.equal(user.whatsappNumber, '557196916296')
+    } finally {
+      teardownFake()
+    }
+  })
+
+  test('auto-cura preenche whatsapp_lid que estava nulo', async ({ assert }) => {
+    setupFake()
+    try {
+      const user = await UserFactory.merge({
+        whatsappNumber: '5511999990201',
+        whatsappLid: null,
+      }).create()
+      const handler = await app.container.make(WhatsAppInboundHandler)
+
+      await handler.handle({
+        fromNumber: '5511999990201',
+        fromJid: '4444444444444@lid',
+        text: 'oi',
+        messageId: 'msg-lid-2',
+      })
+
+      await user.refresh()
+      assert.equal(user.whatsappLid, '4444444444444@lid')
+    } finally {
+      teardownFake()
+    }
+  })
+
+  test('divergência não sobrescreve o valor gravado', async ({ assert }) => {
+    setupFake()
+    try {
+      const user = await UserFactory.merge({
+        whatsappNumber: '5511999990202',
+        whatsappLid: '5555555555555@lid',
+      }).create()
+      const handler = await app.container.make(WhatsAppInboundHandler)
+
+      await handler.handle({
+        fromNumber: '5511999990202',
+        fromJid: '6666666666666@lid',
+        text: 'oi',
+        messageId: 'msg-lid-3',
+      })
+
+      await user.refresh()
+      assert.equal(user.whatsappLid, '5555555555555@lid')
+    } finally {
+      teardownFake()
+    }
+  })
+
+  test('/cadastro por @lid grava as duas identidades', async ({ assert }) => {
+    const fake = setupFake()
+    try {
+      const handler = await app.container.make(WhatsAppInboundHandler)
+
+      await handler.handle({
+        fromNumber: '5511999990203',
+        fromJid: '7777777777777@lid',
+        text: '/cadastro Ana 🦅',
+        messageId: 'msg-lid-4',
+      })
+
+      const user = await User.query().where('whatsapp_lid', '7777777777777@lid').first()
+      assert.isNotNull(user)
+      assert.equal(user!.whatsappNumber, '5511999990203')
+      assert.equal(fake.sentDms[0].number, '7777777777777@lid')
+    } finally {
+      teardownFake()
+    }
+  })
+
+  test('/cadastro por DM comum grava lid nulo', async ({ assert }) => {
+    setupFake()
+    try {
+      const handler = await app.container.make(WhatsAppInboundHandler)
+
+      await handler.handle({
+        fromNumber: '5511999990204',
+        fromJid: '5511999990204@s.whatsapp.net',
+        text: '/cadastro Bruno 🐯',
+        messageId: 'msg-lid-5',
+      })
+
+      const user = await User.query().where('whatsapp_number', '5511999990204').first()
+      assert.isNull(user!.whatsappLid)
+    } finally {
+      teardownFake()
+    }
+  })
+
+  test('cruzamento de colunas: telefone divergente é preservado quando o usuário é achado via lid', async ({
+    assert,
+  }) => {
+    setupFake()
+    try {
+      const user = await UserFactory.merge({
+        whatsappNumber: '5511999990210',
+        whatsappLid: '8888888888888@lid',
+      }).create()
+      const handler = await app.container.make(WhatsAppInboundHandler)
+
+      await handler.handle({
+        fromNumber: '5511999990299',
+        fromJid: '8888888888888@lid',
+        text: 'oi',
+        messageId: 'msg-lid-6',
+      })
+
+      await user.refresh()
+      assert.equal(user.whatsappNumber, '5511999990210')
+      assert.equal(user.whatsappLid, '8888888888888@lid')
+    } finally {
+      teardownFake()
+    }
+  })
+
+  test('heal falho (23505 por lid duplicado entre dois users vivos) não derruba a mensagem', async ({
+    assert,
+  }) => {
+    const fake = setupFake()
+    try {
+      const userA = await UserFactory.merge({
+        whatsappNumber: '5511999990230',
+        whatsappLid: null,
+      }).create()
+      const userB = await UserFactory.merge({
+        whatsappNumber: null,
+        whatsappLid: '1231231231231@lid',
+      }).create()
+      userB.createdAt = userA.createdAt.plus({ minutes: 5 })
+      await userB.save()
+
+      const season = await SeasonFactory.merge({ isActive: true }).create()
+      const round = await RoundFactory.merge({
+        seasonId: season.id,
+        number: 20,
+        status: 'open',
+      }).create()
+      const match = await MatchFactory.merge({
+        roundId: round.id,
+        homeTeam: 'Palmeiras',
+        awayTeam: 'Flamengo',
+        kickoffAt: DateTime.now().plus({ hours: 2 }),
+      }).create()
+
+      const handler = await app.container.make(WhatsAppInboundHandler)
+      await handler.handle({
+        fromNumber: '5511999990230',
+        fromJid: '1231231231231@lid',
+        text: '2x1 Palmeiras',
+        messageId: 'msg-conflict-1',
+      })
+
+      const guess = await Guess.query()
+        .where('user_id', userA.id)
+        .where('match_id', match.id)
+        .first()
+      assert.isNotNull(guess)
+      assert.equal(guess!.homeScore, 2)
+      assert.equal(guess!.awayScore, 1)
+
+      assert.lengthOf(fake.sentDms, 1)
+      assert.match(fake.sentDms[0].text, /✅ Palpite registrado/)
+
+      await userA.refresh()
+      assert.isNull(userA.whatsappLid)
     } finally {
       teardownFake()
     }

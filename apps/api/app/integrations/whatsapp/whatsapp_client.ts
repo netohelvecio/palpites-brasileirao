@@ -1,7 +1,8 @@
 export type WhatsAppMode = 'real' | 'stub' | 'disabled'
 
 export interface IncomingMessage {
-  fromNumber: string
+  fromNumber: string | null
+  fromJid: string
   text: string
   messageId: string
 }

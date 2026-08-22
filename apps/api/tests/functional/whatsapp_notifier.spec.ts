@@ -123,7 +123,7 @@ test.group('WhatsAppNotifier', () => {
     try {
       const notifier = await app.container.make(WhatsAppNotifier)
       await notifier.notifyRoundOpenedToUser({
-        user: { whatsappNumber: '5511987654321', name: 'Helvécio', emoji: '⚽' },
+        user: { whatsappTarget: '5511987654321', name: 'Helvécio', emoji: '⚽' },
         roundNumber: 12,
         homeTeam: 'Palmeiras',
         awayTeam: 'Flamengo',

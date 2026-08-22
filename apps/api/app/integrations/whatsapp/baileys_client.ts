@@ -16,6 +16,7 @@ import WhatsAppClient, {
   type WhatsAppMode,
   type IncomingMessageHandler,
 } from './whatsapp_client.js'
+import { resolveIncomingIdentity } from './incoming_identity.js'
 
 type ConnState = 'connecting' | 'open' | 'close'
 
@@ -208,24 +209,17 @@ export default class BaileysClient extends WhatsAppClient {
         const text = m.message?.conversation ?? m.message?.extendedTextMessage?.text ?? ''
         if (!text.trim()) continue
 
-        // @lid: tenta resolver pro telefone real via senderPn (Baileys 6.7+).
-        // Se não der, usa o JID @lid completo — sendToUser aceita JID, então a reply ainda chega.
-        let fromNumber: string
-        if (isPlainDM) {
-          fromNumber = m.key.remoteJid!.replace(/@s\.whatsapp\.net$/, '')
-        } else {
-          const senderPn = (m.key as any).senderPn as string | undefined
-          fromNumber =
-            senderPn && typeof senderPn === 'string'
-              ? senderPn.replace(/@s\.whatsapp\.net$/, '')
-              : m.key.remoteJid!
-        }
+        const { fromNumber, fromJid } = resolveIncomingIdentity({
+          remoteJid: m.key.remoteJid!,
+          senderPn: (m.key as any).senderPn,
+        })
 
         logger.info(
           {
             remoteJid: m.key.remoteJid,
             pushName: m.pushName ?? null,
             fromNumber,
+            fromJid,
             textPreview: text.slice(0, 80),
           },
           'BaileysClient: DM inbound'
@@ -233,10 +227,11 @@ export default class BaileysClient extends WhatsAppClient {
 
         await this.messageHandler({
           fromNumber,
+          fromJid,
           text,
           messageId: m.key.id ?? 'unknown',
         }).catch((err) => {
-          logger.error({ err, fromNumber }, 'BaileysClient: inbound handler threw')
+          logger.error({ err, fromNumber, fromJid }, 'BaileysClient: inbound handler threw')
         })
       }
     })

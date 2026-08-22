@@ -20,6 +20,10 @@ export default class User extends UserSchema {
     if (!user.id) user.id = randomUUID()
   }
 
+  get whatsappTarget(): string | null {
+    return this.whatsappLid ?? this.whatsappNumber
+  }
+
   @beforeFind()
   @beforeFetch()
   static softDeleteScope(query: ModelQueryBuilderContract<typeof User>) {

@@ -238,6 +238,64 @@ test.group('OpenRoundJob', (group) => {
     }
   }).timeout(15000)
 
+  test('manda DM pelo lid quando o usuário não tem telefone', async ({ assert }) => {
+    await SeasonFactory.merge({
+      isActive: true,
+      year: 2026,
+      externalCompetitionCode: 'BSA',
+    }).create()
+    await UserFactory.merge({
+      whatsappNumber: null,
+      whatsappLid: '8888888888888@lid',
+      name: 'Sem Telefone',
+      emoji: '🐢',
+    }).create()
+
+    const { football, whatsapp } = setupFakes()
+    football.standings = fakeStandings(12, 2026, { 1: 30, 2: 25 })
+    football.matchesByMatchday.set('2026:12', [fakeMatch(1001, 1, 2, 12)])
+
+    try {
+      const job = await app.container.make(OpenRoundJob)
+      const report = await job.run()
+
+      assert.equal(report.runs[0].roundOpened, true)
+      assert.lengthOf(whatsapp.sentDms, 1)
+      assert.equal(whatsapp.sentDms[0].number, '8888888888888@lid')
+      assert.match(whatsapp.sentDms[0].text, /Oi Sem Telefone 🐢!/)
+    } finally {
+      teardownFakes()
+    }
+  }).timeout(15000)
+
+  test('prefere o lid ao telefone quando o usuário tem as duas identidades', async ({ assert }) => {
+    await SeasonFactory.merge({
+      isActive: true,
+      year: 2026,
+      externalCompetitionCode: 'BSA',
+    }).create()
+    await UserFactory.merge({
+      whatsappNumber: '5511999990500',
+      whatsappLid: '9999999999999@lid',
+      name: 'Duas Identidades',
+      emoji: '🦅',
+    }).create()
+
+    const { football, whatsapp } = setupFakes()
+    football.standings = fakeStandings(12, 2026, { 1: 30, 2: 25 })
+    football.matchesByMatchday.set('2026:12', [fakeMatch(1001, 1, 2, 12)])
+
+    try {
+      const job = await app.container.make(OpenRoundJob)
+      await job.run()
+
+      assert.lengthOf(whatsapp.sentDms, 1)
+      assert.equal(whatsapp.sentDms[0].number, '9999999999999@lid')
+    } finally {
+      teardownFakes()
+    }
+  }).timeout(15000)
+
   test('falha de DM individual não trava outros users nem desfaz flip', async ({ assert }) => {
     const season = await SeasonFactory.merge({
       isActive: true,

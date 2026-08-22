@@ -50,7 +50,7 @@ export default class WhatsAppNotifier {
   }
 
   async notifyRoundOpenedToUser(args: {
-    user: { whatsappNumber: string; name: string; emoji: string }
+    user: { whatsappTarget: string; name: string; emoji: string }
     roundNumber: number
     homeTeam: string
     awayTeam: string
@@ -66,7 +66,7 @@ export default class WhatsAppNotifier {
       kickoffAt: args.kickoffAt,
       pointsMultiplier: args.pointsMultiplier,
     })
-    await this.client.sendToUser(args.user.whatsappNumber, text)
+    await this.client.sendToUser(args.user.whatsappTarget, text)
   }
 
   async notifyGuessRegistered(input: GuessRegisteredGroupInput): Promise<void> {

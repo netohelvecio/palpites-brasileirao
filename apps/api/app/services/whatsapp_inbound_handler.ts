@@ -1,6 +1,8 @@
 import { inject } from '@adonisjs/core'
 import { DateTime } from 'luxon'
 import logger from '@adonisjs/core/services/logger'
+import db from '@adonisjs/lucid/services/db'
+import type User from '#models/user'
 import UserRepository from '#repositories/user_repository'
 import RoundRepository from '#repositories/round_repository'
 import GuessRepository from '#repositories/guess_repository'
@@ -47,13 +49,13 @@ export default class WhatsAppInboundHandler {
   private async handleRegister(msg: IncomingMessage): Promise<void> {
     const args = msg.text.replace(/^\/cadastro\b\s*/i, '').trim()
     if (!args) {
-      await this.client.sendToUser(msg.fromNumber, REGISTER_HELP)
+      await this.client.sendToUser(msg.fromJid, REGISTER_HELP)
       return
     }
 
     const tokens = args.split(/\s+/).filter((t) => t.length > 0)
     if (tokens.length < 2) {
-      await this.client.sendToUser(msg.fromNumber, REGISTER_HELP)
+      await this.client.sendToUser(msg.fromJid, REGISTER_HELP)
       return
     }
 
@@ -61,14 +63,14 @@ export default class WhatsAppInboundHandler {
     const name = tokens.slice(0, -1).join(' ')
 
     if (name.length > 80) {
-      await this.client.sendToUser(msg.fromNumber, NAME_TOO_LONG)
+      await this.client.sendToUser(msg.fromJid, NAME_TOO_LONG)
       return
     }
 
-    const existing = await this.userRepository.findByWhatsappNumber(msg.fromNumber)
+    const existing = await this.resolveUser(msg)
     if (existing) {
       await this.client.sendToUser(
-        msg.fromNumber,
+        msg.fromJid,
         `Você já está cadastrado como ${existing.name} ${existing.emoji}.`
       )
       return
@@ -78,11 +80,12 @@ export default class WhatsAppInboundHandler {
       name,
       emoji,
       whatsappNumber: msg.fromNumber,
+      whatsappLid: msg.fromJid.endsWith('@lid') ? msg.fromJid : null,
       isAdmin: false,
     })
 
     await this.client.sendToUser(
-      msg.fromNumber,
+      msg.fromJid,
       `✅ Cadastrado, ${name} ${emoji}! A partir de agora você pode mandar palpites.`
     )
   }
@@ -90,33 +93,30 @@ export default class WhatsAppInboundHandler {
   private async handleEscolher(msg: IncomingMessage): Promise<void> {
     const match = msg.text.match(/^\/escolher\s+(\d+)\s*$/i)
     if (!match) {
-      await this.client.sendToUser(msg.fromNumber, ESCOLHER_HELP)
+      await this.client.sendToUser(msg.fromJid, ESCOLHER_HELP)
       return
     }
 
-    const user = await this.userRepository.findByWhatsappNumber(msg.fromNumber)
+    const user = await this.resolveUser(msg)
     if (!user) {
-      await this.client.sendToUser(msg.fromNumber, NOT_REGISTERED)
+      await this.client.sendToUser(msg.fromJid, NOT_REGISTERED)
       return
     }
     if (!user.isAdmin) {
-      await this.client.sendToUser(msg.fromNumber, ESCOLHER_RESTRICTED)
+      await this.client.sendToUser(msg.fromJid, ESCOLHER_RESTRICTED)
       return
     }
 
     const round = await this.roundRepository.findCurrentAwaitingPickAcrossSeasons()
     if (!round) {
-      await this.client.sendToUser(msg.fromNumber, NO_AWAITING_ROUND)
+      await this.client.sendToUser(msg.fromJid, NO_AWAITING_ROUND)
       return
     }
 
     const position = Number.parseInt(match[1], 10)
     const candidate = await this.roundCandidateRepository.findByRoundAndPosition(round.id, position)
     if (!candidate) {
-      await this.client.sendToUser(
-        msg.fromNumber,
-        `Posição ${position} é inválida pra rodada atual.`
-      )
+      await this.client.sendToUser(msg.fromJid, `Posição ${position} é inválida pra rodada atual.`)
       return
     }
 
@@ -126,13 +126,13 @@ export default class WhatsAppInboundHandler {
         { reason: result.reason, roundId: round.id, candidateId: candidate.id },
         'WhatsAppInboundHandler: pick falhou inesperadamente'
       )
-      await this.client.sendToUser(msg.fromNumber, INTERNAL_ERROR)
+      await this.client.sendToUser(msg.fromJid, INTERNAL_ERROR)
       return
     }
 
     try {
       await this.client.sendToUser(
-        msg.fromNumber,
+        msg.fromJid,
         `✅ Jogo da rodada ${round.number} definido: ${candidate.homeTeam} x ${candidate.awayTeam}`
       )
     } catch (err) {
@@ -153,15 +153,15 @@ export default class WhatsAppInboundHandler {
   }
 
   private async handleGuess(msg: IncomingMessage): Promise<void> {
-    const user = await this.userRepository.findByWhatsappNumber(msg.fromNumber)
+    const user = await this.resolveUser(msg)
     if (!user) {
-      await this.client.sendToUser(msg.fromNumber, NOT_REGISTERED)
+      await this.client.sendToUser(msg.fromJid, NOT_REGISTERED)
       return
     }
 
     const round = await this.roundRepository.findOpenInActiveSeason()
     if (!round) {
-      await this.client.sendToUser(msg.fromNumber, NO_OPEN_ROUND)
+      await this.client.sendToUser(msg.fromJid, NO_OPEN_ROUND)
       return
     }
 
@@ -171,15 +171,12 @@ export default class WhatsAppInboundHandler {
         { roundId: round.id, fromNumber: msg.fromNumber },
         'WhatsAppInboundHandler: round open sem match associado'
       )
-      await this.client.sendToUser(msg.fromNumber, INTERNAL_ERROR)
+      await this.client.sendToUser(msg.fromJid, INTERNAL_ERROR)
       return
     }
 
     if (match.kickoffAt < DateTime.now()) {
-      await this.client.sendToUser(
-        msg.fromNumber,
-        `⏱️ Palpites fechados pra rodada ${round.number}.`
-      )
+      await this.client.sendToUser(msg.fromJid, `⏱️ Palpites fechados pra rodada ${round.number}.`)
       return
     }
 
@@ -189,7 +186,7 @@ export default class WhatsAppInboundHandler {
     })
     if (!parsed.ok) {
       await this.client.sendToUser(
-        msg.fromNumber,
+        msg.fromJid,
         `❌ Não entendi o placar. Exemplo: 2x1 ${match.homeTeam}, ou 1x1 (empate).`
       )
       return
@@ -202,7 +199,7 @@ export default class WhatsAppInboundHandler {
 
     try {
       await this.client.sendToUser(
-        msg.fromNumber,
+        msg.fromJid,
         `✅ Palpite registrado: ${match.homeTeam} ${parsed.homeScore} x ${parsed.awayScore} ${match.awayTeam}.`
       )
     } catch (err) {
@@ -225,6 +222,44 @@ export default class WhatsAppInboundHandler {
       logger.error(
         { err, fromNumber: msg.fromNumber },
         'WhatsAppInboundHandler: falha ao postar no grupo'
+      )
+    }
+  }
+
+  private async resolveUser(msg: IncomingMessage): Promise<User | null> {
+    const user = await this.userRepository.findByWhatsappIdentity(msg.fromNumber, msg.fromJid)
+    if (user) await this.healIdentity(user, msg)
+    return user
+  }
+
+  private async healIdentity(user: User, msg: IncomingMessage): Promise<void> {
+    const incomingLid = msg.fromJid.endsWith('@lid') ? msg.fromJid : null
+    const patch: { whatsappNumber?: string; whatsappLid?: string } = {}
+
+    if (!user.whatsappNumber && msg.fromNumber) patch.whatsappNumber = msg.fromNumber
+    if (!user.whatsappLid && incomingLid) patch.whatsappLid = incomingLid
+
+    if (user.whatsappNumber && msg.fromNumber && user.whatsappNumber !== msg.fromNumber) {
+      logger.warn(
+        { userId: user.id, stored: user.whatsappNumber, incoming: msg.fromNumber },
+        'WhatsAppInboundHandler: whatsapp_number divergente'
+      )
+    }
+    if (user.whatsappLid && incomingLid && user.whatsappLid !== incomingLid) {
+      logger.warn(
+        { userId: user.id, stored: user.whatsappLid, incoming: incomingLid },
+        'WhatsAppInboundHandler: whatsapp_lid divergente'
+      )
+    }
+
+    if (Object.keys(patch).length === 0) return
+
+    try {
+      await db.transaction((trx) => this.userRepository.update(user, patch, trx))
+    } catch (err) {
+      logger.warn(
+        { userId: user.id, patch, err },
+        'WhatsAppInboundHandler: falha ao curar identidade'
       )
     }
   }

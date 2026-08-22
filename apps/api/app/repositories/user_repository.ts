@@ -10,8 +10,14 @@ export default class UserRepository extends BaseRepository<typeof User> {
     return User.query().orderBy('created_at', 'asc')
   }
 
-  findByWhatsappNumber(whatsappNumber: string) {
-    return User.query().where('whatsapp_number', whatsappNumber).first()
+  findByWhatsappIdentity(phone: string | null, jid: string) {
+    return User.query()
+      .where((q) => {
+        if (phone) q.orWhere('whatsapp_number', phone)
+        q.orWhere('whatsapp_lid', jid)
+      })
+      .orderBy('created_at', 'asc')
+      .first()
   }
 
   async existsByWhatsappNumber(whatsappNumber: string): Promise<boolean> {
